@@ -1,0 +1,7 @@
+set show-all-if-ambiguous on
+set bell-style visible
+set editing-mode vi
+set history-size 0
+set mark-directories on
+set visible-stats on
+
