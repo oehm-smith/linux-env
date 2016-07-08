@@ -1,0 +1,2 @@
+ARTIFACTORY_HOME=/opt/artifactory
+export PATH=$ARTIFACTORY_HOME/bin:$PATH
