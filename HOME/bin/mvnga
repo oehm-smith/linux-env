@@ -1,0 +1,18 @@
+#!/bin/bash
+# Due to us using an external repository with no ssh connection.  This is the ~/.m2/repo/settings.xml
+#   <servers/>
+#        <server>
+#            <id>nexus.gadevs</id>
+#            <username>bsmith</username>
+#            <password>gumby123</password>
+#        <server>
+#    <mirrors>
+#        <mirror>
+#            <id>nexus.gadevs</id>
+#            <name>Nexus GA Devs</name>
+#            <url>https://nexus.gadevs.ga./repository/maven-public/</url>
+#            <mirrorOf>*</mirrorOf>
+#        </mirror>
+#    </mirrors>
+
+mvn $@ -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true

@@ -1,0 +1,13 @@
+#!/bin/bash
+# From http://www.howardism.org/Technical/Linux/tmux.html
+
+if [ "$TERM" != "screen" ]
+then
+    if type tmux >/dev/null 2>&1
+    then
+        tmux -CC attach -t Work || tmux -CC \
+            new -s Work -n Work1 \; \
+            neww -n Work2 \; \
+            neww -n Work3
+    fi
+fi
