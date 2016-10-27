@@ -67,15 +67,27 @@ else
   PS1COLOUR=$FBLE
 fi
 
-if [ -e /etc/bashrc.d/git-prompt.shx ]; then
-    . /etc/bashrc.d/git-prompt.sh
+#if [ -e /etc/bashrc.d/git-files.sh ]; then
+#    . /etc/bashrc.d/git-prompt-settings.sh
+#    . /etc/bashrc.d/git-prompt.sh
+#fi
+
+DIR=/etc/bashrc.d
+if [ -d $DIR ]; then
+  for i in $DIR/*.sh; do
+    if [ -r $i ]; then
+      . $i
+    fi
+  done
+  unset i
 fi
+unset DIR
 
 if [ "$color_prompt" = yes ]; then
 #    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
     #PS1="$HC$FBLE${debian_chroot:+($debian_chroot)}\u$FYEL: $FBLE\w $FYEL\\$ $RS"
     #PS1="$HC$PS1COLOUR${debian_chroot:+($debian_chroot)}\u@\h$FYEL: $PS1COLOUR\w \\$ $RS"
-    PS1="$HC$PS1COLOUR${debian_chroot:+($debian_chroot)}\u@\h$FYEL: $PS1COLOUR\w "$(__git_ps1 " (%s)")"$FYEL\\$ $RS"
+    PS1="$HC$PS1COLOUR${debian_chroot:+($debian_chroot)}\u@\h$FYEL: $PS1COLOUR\w $BWHT"$(__git_ps1 "(%s)")"$RS$FYEL\\$ $RS"
     #PS1="$FRED [\u@\h \W"$(__git_ps1 " (%s)")"]\$$RS "
     echo PS1: $PS1
     PS2="$HC$FYEL> $RS"
@@ -135,14 +147,4 @@ if [ -x /usr/lib/command-not-found -o -x /usr/share/command-not-found/command-no
 	}
 fi
 
-DIR=/etc/bashrc.d
-if [ -d $DIR ]; then
-  for i in $DIR/*.sh; do
-    if [ -r $i ]; then
-      . $i
-    fi
-  done
-  unset i
-fi
-unset DIR
 
