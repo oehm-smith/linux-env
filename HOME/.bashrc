@@ -1,2 +1,2 @@
-echo ~/.bashrc
+#echo ~/.bashrc
 source /etc/bashrc

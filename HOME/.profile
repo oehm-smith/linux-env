@@ -1,2 +1,2 @@
-echo ~/.profile
+#echo ~/.profile
 source ~/.bashrc
