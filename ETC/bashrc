@@ -90,7 +90,7 @@ if [ "$color_prompt" = yes ]; then
     #PS1="$FRED [\u@\h \W"$(__git_ps1 " (%s)")"]\$$RS "
     #PS1='$HC$PS1COLOUR${debian_chroot:+($debian_chroot)}\u@\h$FYEL: $PS1COLOUR\w $BWHT$(__git_ps1 "(%s)")$RS$FYEL \t\\$ $RS'
     #PS1='\[$FRED\]${debian_chroot:+($debian_chroot)}\u@\h: \w $(__git_ps1 "(%s)") \t\\$ '
-    PS1='\[$HC$PS1COLOUR\]${debian_chroot:+($debian_chroot)}\u@\h\[$FYEL\]: \[$PS1COLOUR\]\w \[$BWHT\]$(__git_ps1 "(%s)")\[$RS$FYEL\]\\$ \[$RS\]'
+    PS1='\[$HC$PS1COLOUR\]${debian_chroot:+($debian_chroot)}\u@\h\[$FYEL\]: \[$PS1COLOUR\]\W \[$BWHT\]$(__git_ps1 "(%s)")\[$RS$FYEL\]\\$ \[$RS\]'
 
     #PS1='${debian_chroot:+($debian_chroot)}\u@\h: \w $(__git_ps1 "(%s)") \t\\$ '
     #PS1='\u@\h: \w $(__git_ps1 "(%s)") \t\\$ '
