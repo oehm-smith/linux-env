@@ -2,13 +2,13 @@
 # Also see his .gitconfig - https://github.com/durdn/cfg/blob/master/.gitconfig
 [user]
 	name = Brooke Smith
-	email = brooke.smith@ga.gov.au
+	email = brooke@oehmsmith.com
 [core]
 	editor = /usr/bin/vim
 [http]
-	proxy = http://localhost:3128
+#	proxy = http://localhost:3128
 [https]
-	proxy = http://localhost:3128
+#	proxy = http://localhost:3128
 [alias]
 	# Print aliases - http://stackoverflow.com/questions/7066325/how-to-list-show-git-aliases
 	# I didn't get the colour version working
@@ -56,3 +56,5 @@
     	status = auto  
     	branch = auto 
 
+[push]
+	default = simple
