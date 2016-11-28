@@ -1,2 +1,3 @@
-#echo ~/.profile
 source ~/.bashrc
+export PATH=~/bin:$PATH
+
