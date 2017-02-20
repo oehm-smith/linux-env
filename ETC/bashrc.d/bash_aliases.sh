@@ -33,3 +33,9 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 #Temp so can return to dir
 alias gnss='cd ~/dev/work/ga/gnss-site-manager'
 
+alias cd..='cd ..'
+alias ..='cd ../..'
+alias ...='cd ../../..'
+alias ....='cd ../../../..'
+alias .....='cd ../../../../..'
+
