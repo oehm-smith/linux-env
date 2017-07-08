@@ -8,7 +8,7 @@ count=0
 while true;
 do
 	lastStat=0
-	ping -c 1 8.8.8.8 > /tmp/ping
+	ping -c 3 8.8.8.8 > /tmp/ping
 	err=$?
     	if [ $err != 0 ]; then
 		echo ------------------
@@ -23,7 +23,7 @@ do
 			date
 			echo ping status $err
 			count=$(expr $count + 1)
-			say n
+			say n $count
 		fi
     	fi
 done
