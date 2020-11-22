@@ -1,0 +1,33 @@
+#!/bin/bash
+# Purpose: to remove items with '!' status where this is being caused because an item under rev control was deleted by something
+#		outside of svn such as Thunderbird, Netbeans or other application.
+# Arguments:
+#		$1 is the file or defaults to "$*" for all items
+
+#OIFS=$IFS
+#IFS=\n
+# Printing 2.. so handles paths with spaces in them.
+if [ $# -lt 1 ]; then
+	for item in `svn st "$@"|egrep "^\!"| awk '{print $2,$3,$4,$5,$6,$7,$8}'`; do
+	 	echo svn up $item
+	 	svn up $item
+	 	if [ $? -gt 0 ]; then
+	 		echo error: $?
+	 	else
+			echo svn rm $item
+			svn rm $item
+		fi
+	done
+else
+	for item in `svn st $1|egrep "^\!"| awk '{print $2,$3,$4,$5,$6,$7,$8}'`; do
+	 	echo svn up $item
+	 	svn up $item
+	 	if [ $? -gt 0 ]; then
+	 		echo error
+	 		exit 1
+	 	fi
+		echo svn rm $item
+		svn rm $item
+	done
+fi
+#IFS=$OIFS

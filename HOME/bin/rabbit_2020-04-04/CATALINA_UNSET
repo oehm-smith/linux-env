@@ -1,0 +1,10 @@
+#!/bin/bash
+# Needed for multiple instances of TOMCAT - the first and main one
+#	/usr/local/tomcat has CATALINA_HOME set to this dir.  Other instances
+#	Need to be started from the basedir after clearing the CAT... vars.
+# Users:
+#	Jira
+
+unset CATALINA_HOME
+unset CATALINA_BASE
+unset CATALINA_TMPDIR

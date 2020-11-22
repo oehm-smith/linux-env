@@ -1,0 +1,3 @@
+#!/bin/bash
+# SVN Status printed to terminal and excludes new or added items
+svn st "$@" | egrep "^[^MAD]"

@@ -1,0 +1,2 @@
+#!/bin/bash
+svn diff "$@" > /tmp/svn_diff.$$ && bbedit /tmp/svn_diff.$$

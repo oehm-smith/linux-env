@@ -1,0 +1,1 @@
+loaded-heroku-quickStocks-Portfolio-quoteForToday.sh

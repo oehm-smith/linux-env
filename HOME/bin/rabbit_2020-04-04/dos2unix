@@ -1,0 +1,2 @@
+#!/usr/bin/perl -pi
+tr/\r?\n?/\n/d

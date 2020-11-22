@@ -6,4 +6,4 @@ if [ -z "$TERM" ]; then
 	exit 1
 fi
 
-grep -Rin $TERM * | grep -v "node_modules\|build"
+grep -Rin "$TERM" * | grep -v "node_modules\|build"
