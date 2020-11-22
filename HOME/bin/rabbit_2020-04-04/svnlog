@@ -1,0 +1,11 @@
+#!/bin/bash
+echo svnlog
+echo "$@"
+
+gBrokenArgs=""
+for item in "$@"; do
+	gBrokenArgs="$gBrokenArgs $item"
+done
+echo Broken Paths: $gBrokenArgs
+/sw/bin/svn log "$gBrokenArgs" > /tmp/svn_diff.$$ && bbedit /tmp/svn_diff.$$
+rm /tmp/svn_diff.$$

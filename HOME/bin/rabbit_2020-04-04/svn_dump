@@ -1,0 +1,98 @@
+#!/usr/bin/perl -w
+# File: svn_dump (he called dump_svn)
+#		(http://svn.haxx.se/users/archive-2004-09/0614.shtml)
+# Author: Neil Gunton <neil@nilspace.com> 
+# Purpose: To backup an svn repository incrementally
+# Arguments:
+#		<repository dir path> <dest dir path>
+# Comments:
+#		* Incremental backup
+#		* It keeps the revision in the last backup in the backup directory (file: 'gLastRevision')
+
+# Neil's original comments:
+# dump_svn v1.0
+# Incremental dump of subversion repository to a specified dump
+# Syntax: dump_svn <repository dir path> <dest dir path>
+# Uses 'gLastRevision' file in dump dir to keep track of last rev dumped
+# Intended for running on same machine as repository
+# By Neil Gunton 2004
+# This program can be used and distributed freely
+# 
+# BSmith 2008 04 06 - Modify to includee the repository in the 'gLastRevision' file name so this
+#		can be used for more than one repository.
+#		The name is the last part of the repository_dir_path since this must be unique on the same server.
+#		NEW ARG (3) - revision to backup to.
+
+use strict;
+
+# Check param
+my ($gRepoPath, $gDestPath) = @ARGV
+or die "Syntax: dump_svn <repository dir path> <dest dir path>";
+
+my $gEndRevision = $ARGV[2] || 0;
+my $gEndRev2Use;
+
+# BSmith 2008 04 06 - check the destination path exists
+if (! -d $gDestPath) {
+	die("ERROR: $0 - destination path doesnt exist: $gDestPath");
+}
+# Delete any trailing slash on dest path
+$gDestPath =~ s/\/$//;
+
+my $gRepoName = $gRepoPath;
+$gRepoName =~ s|.*/(.*)$|$1|;
+
+# BSmith 2008 04 06 - new file name
+my $gLastRevFile = "LastRevision-${gRepoName}";
+
+# BSmith 2008 04 06 - use passed in last rev to use if it exists
+if ($gEndRevision) {
+	$gEndRev2Use = $gEndRevision;
+} else {
+	# Use svnlook to see what the current version is
+	$gEndRev2Use = `svnlook youngest $gRepoPath`;
+	chomp ($gEndRev2Use);
+}
+
+# Read last revision saved
+my $gLastRevision = 0;
+print STDERR "Last Rev File: $gDestPath/$gLastRevFile\n";
+if (-e "$gDestPath/$gLastRevFile")
+{
+    open (FILE, "< $gDestPath/$gLastRevFile")
+        or die "open for read failed for $gDestPath/$gLastRevFile: $!\n";
+    while (<FILE>) {
+    	if (/\d+/) {
+    		$gLastRevision = $_;
+    	}
+    }
+    chomp $gLastRevision;
+    print STDERR "gLastRevision: $gLastRevision\n";
+    close (FILE);
+    #die("testing");
+}
+# Dump if gEndRev2Use revision is younger than last dump
+if ($gEndRev2Use > $gLastRevision)
+{
+    my $next_revision = $gLastRevision ? $gLastRevision + 1 : 0;
+    my @lDateData = localtime(time);
+    my $lDate = $lDateData[5]+1900;
+    $lDate = sprintf("%d%02d%02d",$lDate, $lDateData[4]+1, $lDateData[3]);
+    my $lDump = "$gDestPath/${gRepoName}_${lDate}_${next_revision}+${gEndRev2Use}.dump.gz";
+		print STDERR "$0 - backup $gRepoPath to $lDump (compressed)\n";
+    my $command = "svnadmin dump -r $next_revision:$gEndRev2Use $gRepoPath --incremental" .
+                  " | gzip -c > $lDump";
+    print "$command\n";
+    system ($command);
+} else {
+	print STDERR "$0 - backup not done as lastest rev is <= last rev - $gEndRev2Use <= $gLastRevision\n";
+}
+#die("Testing");
+# Save latest revision
+open (FILE, "> $gDestPath/$gLastRevFile") or die "open for write failed
+for $gDestPath/$gLastRevFile: $!\n";
+print FILE $gEndRev2Use;
+close FILE;
+
+# Finish
+1;
