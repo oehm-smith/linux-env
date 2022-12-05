@@ -27,3 +27,5 @@ POWERLINE_BASH_SELECT=1
 PL=~/Library/Python/2.7/lib/python/site-packages/powerline/bindings/bash/powerline.sh
 [[ -s $PL ]] && source $PL
 #. ~/Library/Python/2.7/lib/python/site-packages/powerline/bindings/bash/powerline.sh
+
+source ~/.bash_alias
