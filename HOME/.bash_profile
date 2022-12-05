@@ -31,6 +31,12 @@ export PATH="$HOME/.jenv/shims:$PATH"
 # Other
 [[ -s ~/.iterm2_shell_integration.bash ]] && source ~/.iterm2_shell_integration.bash
 [[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"
+[[ -r "$HOME/.bash_flightcentre" ]] && . "$HOME/.bash_flightcentre"
 
+export LESSOPEN="lessopen.sh %s"
+export LESSCLOSE="lessclose.sh %s %s"
+export HISTCONTROL=ignoreboth
+source ~/.android_bash
 source ~/.bashrc
-source .bash_alias
+
+export PATH="/Users/bbos/.local/share/solana/install/active_release/bin:$PATH"
