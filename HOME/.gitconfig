@@ -5,6 +5,7 @@
 	email = brooke@oehmsmith.com
 [core]
 	editor = /usr/bin/vim
+	pager = less -Xr
 [http]
 #	proxy = http://localhost:3128
 [https]
@@ -62,3 +63,5 @@
 	default = simple
 [gui]
 	fontdiff = -family Menlo -size 12 -weight normal -slant roman -underline 0 -overstrike 0
+[pull]
+	ff = only
