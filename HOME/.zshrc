@@ -1,6 +1,6 @@
 # If you come from bash you might have to change your $PATH.
-#export PATH=$HOME/bin:/usr/local/bin:$PATH
-export PATH=$HOME/bin:$PATH
+export PATH=$HOME/bin:/usr/local/bin:$PATH
+#export PATH=$HOME/bin:$PATH
 
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -100,3 +100,23 @@ source $ZSH/oh-my-zsh.sh
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
+
+alias historyDisable="function zshaddhistory() {  return 1 }"
+alias historyEnable="unset -f zshaddhistory"
+
+# Shell Env
+export HISTCONTROL=ignoredups
+bindkey -v
+# bindkey '^R' history-incremental-search-backward
+bindkey ^R history-incremental-search-backward
+bindkey ^S history-incremental-search-forward
+
+set editing-mode vi
+set blink-matching-paren on
+
+alias terminator="/usr/local/Cellar/terminator/2.1.2/libexec/bin/terminator"
+
+# This loads nvm bash_completion
+export NVM_DIR="$HOME/.nvm"
+  [ -s "/usr/local/opt/nvm/nvm.sh" ] && \. "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
+  [ -s "/usr/local/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/usr/local/opt/nvm/etc/bash_completion.d/nvm"  
