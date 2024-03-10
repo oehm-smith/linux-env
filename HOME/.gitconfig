@@ -3,6 +3,7 @@
 [user]
 	name = Brooke Smith
 	email = brooke@oehmsmith.com
+	signingKey = ""
 [core]
 	editor = /usr/bin/vim
 	pager = less -Xr
@@ -65,3 +66,15 @@
 	fontdiff = -family Menlo -size 12 -weight normal -slant roman -underline 0 -overstrike 0
 [pull]
 	ff = only
+[gpg]
+	format = openpgp
+	program = gpg
+[commit]
+	gpgSign = false
+[tag]
+	forceSignAnnotated = false
+[gpg "ssh"]
+	program = ssh-keygen
+	allowedSignersFile = ""
+[pager]
+	branch = false
