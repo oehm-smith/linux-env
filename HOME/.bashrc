@@ -29,3 +29,5 @@ PL=~/Library/Python/2.7/lib/python/site-packages/powerline/bindings/bash/powerli
 #. ~/Library/Python/2.7/lib/python/site-packages/powerline/bindings/bash/powerline.sh
 
 source ~/.bash_alias
+
+[ -s "/Users/bbos/.svm/svm.sh" ] && source "/Users/bbos/.svm/svm.sh"
