@@ -1,0 +1,57 @@
+# Source this from .zshrc
+
+alias historyDisable="function zshaddhistory() {  return 1 }"
+alias historyEnable="unset -f zshaddhistory"
+
+# Shell Env
+export HISTCONTROL=ignoredups
+bindkey -v
+# bindkey '^R' history-incremental-search-backward
+bindkey ^R history-incremental-search-backward
+bindkey ^S history-incremental-search-forward
+
+# 2024-02-06 - history unique to each shell but merged when closes
+setopt noincappendhistory
+setopt nosharehistory
+setopt appendhistory
+
+set editing-mode vi
+set blink-matching-paren on
+
+alias terminator="/usr/local/Cellar/terminator/2.1.2/libexec/bin/terminator"
+alias ppm=pnpm
+
+# This loads nvm bash_completion
+export NVM_DIR="$HOME/.nvm"
+  [ -s "/usr/local/opt/nvm/nvm.sh" ] && \. "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
+  [ -s "/usr/local/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/usr/local/opt/nvm/etc/bash_completion.d/nvm"
+
+Xhex2decimal(){
+  IN=$(echo $@ | tr '[:lower:]' '[:upper:]')
+  #echo "ibase=16; $IN" | bc
+	echo Not Calling ibase for hex2decimal
+}
+Xdecimal2hex(){
+  #echo "obase=16; $@"|bc
+	echo Not Calling ibase for decimal2hex
+}
+
+[ -s "/Users/bbos/.svm/svm.sh" ] && source "/Users/bbos/.svm/svm.sh"
+
+export JAVA_HOME=`/usr/libexec/java_home -v 17`A
+
+# Python and ChatGPT
+# https://github.com/pyenv/pyenv#set-up-your-shell-environment-for-pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
+[[ -d $HOME/anaconda3/bin ]] && export PATH="$HOME/anaconda3/bin:$PATH"
+
+# PNPM
+
+export PNPM_HOME="/Users/bbos/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
