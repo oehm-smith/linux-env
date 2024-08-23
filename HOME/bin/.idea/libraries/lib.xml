@@ -1,0 +1,34 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/jersey-atom-abdera-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jaxb-api.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/oauth-server-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/asm-3.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-guice-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-client-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jackson-core-asl-1.9.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jsr173_1.0_api.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jackson-jaxrs-1.9.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/SunRiseSet.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-core-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/activation.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-spring-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jackson-mapper-asl-1.9.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/oauth-client-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-servlet-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jackson-xc-1.9.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-server-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-simple-server-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/junit-4.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/json.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/oauth-signature-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-apache-client-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-json-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jersey-multipart-1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jettison-1.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
