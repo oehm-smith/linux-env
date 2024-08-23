@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# 2024-04-01 need to use -O with scp
+# From https://superuser.com/questions/1809629/scp-o-legacy-protocol-option-per-config-filRk
+exec /usr/bin//scp -O "$@"
+
