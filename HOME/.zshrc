@@ -73,7 +73,8 @@ ZSH_THEME="philips"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 # zsh-cheat is zsh-hstory - https://github.com/hadenlabs/zsh-history
-plugins=(vi-mode git bbedit themes)
+# Poetry is python tool - https://python-poetry.org/docs/ (see Oh My Zsh)
+plugins=(vi-mode git bbedit themes poetry)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -122,3 +123,6 @@ unset __conda_setup
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
+
+# Created by `pipx` on 2024-10-30 03:05:56
+export PATH="$PATH:/Users/brooke/.local/bin"
