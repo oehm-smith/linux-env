@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-pw=$1
-shift
+# pw=$1
+# shift
 
 SAVEIFS=$IFS
 IFS=$'\n'
@@ -11,13 +11,17 @@ echo encFiles: "${encFiles[@]}"
 #encFiles="$@"
 #echo encFiles: $encFiles
 
-if [ -z "$pw" ]; then
-	echo USAGE: $0 PW _files Or dirs tar to decrypt_ - missing password
+if [ -z "${encFiles[@]}" ]; then
+	echo USAGE: $0 PW _files Or dirs to decrypt_
 	exit 1
 fi
 
-if [ -z "${encFiles[@]}" ]; then
-	echo USAGE: $0 PW _files Or dirs to decrypt_
+echo "Enter password"
+read -s PASS; echo; RESULT=$(echo "$PASS" | md5sum | awk '{print $1}') && pw="$PASS$RESULT"
+#echo pw: "$pw"
+
+if [ -z "$pw" ]; then
+	echo USAGE: $0 PW _files Or dirs tar to decrypt_ - missing password
 	exit 1
 fi
 
@@ -46,7 +50,7 @@ do
     echo Output tar file already exists - aborting: $tarName
     exit 1
   fi
-  echo openssl aes-256-cbc -d -a -pbkdf2  -pass "pass:$pw" -in "$encFile" \> "$tarName"
+  echo openssl aes-256-cbc -d -a -pbkdf2  -pass "pass:***" -in "$encFile" \> "$tarName"
   openssl aes-256-cbc -d -a -pbkdf2 -pass "pass:$pw" -in "$encFile" > "$tarName"
 
   if [ $? -ne 0 ]; then
