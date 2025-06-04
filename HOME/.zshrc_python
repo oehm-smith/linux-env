@@ -11,7 +11,7 @@ eval "$(pyenv virtualenv-init -)"
 [[ -d $HOME/anaconda3/bin ]] && export PATH="$HOME/anaconda3/bin:$PATH"
 
 # Python
-alias python=python3
-alias pip=pip3
+#alias python=python3
+#alias pip=pip3
 
 

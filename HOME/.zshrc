@@ -126,3 +126,11 @@ test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell
 
 # Created by `pipx` on 2024-10-30 03:05:56
 export PATH="$PATH:/Users/brooke/.local/bin"
+
+# pnpm
+export PNPM_HOME="/Users/brooke/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
