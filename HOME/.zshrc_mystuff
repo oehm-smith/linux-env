@@ -54,3 +54,6 @@ source ~/.zshrc_python
 source ~/.zshrc_kubernetes
 source ~/.zshrc_aliasNcommands
 
+# 2025-05-26 force zwh to automatically reread bins in $PATH since after `brew install` I don't see it until source shell again or `rehash`
+setopt AUTO_REHASH
+
