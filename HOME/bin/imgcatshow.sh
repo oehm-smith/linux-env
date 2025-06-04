@@ -3,12 +3,13 @@
 # Function to display help message
 show_help() {
     echo "Navigation:"
-    echo "  Up Arrow    - Previous image (wraps to last if at first)"
-    echo "  Down Arrow  - Next image (wraps to first if at last)"
+    echo "  Up Arrow    - Previous file (wraps to last if at first)"
+    echo "  Down Arrow  - Next file (wraps to first if at last)"
     echo "  Ctrl+C      - Exit the viewer"
     echo "  h           - Show this help message"
+    echo ""
+    echo "Supports image files (displayed with imgcat) and video files (played with ffplay)"
 }
-
 # Function to get terminal dimensions and determine which parameter to use
 get_terminal_dimensions() {
     # Get terminal width and height
@@ -106,6 +107,52 @@ display_image() {
     last_viewed="${image_files[$current_index]}"
 }
 
+# Function to check if a file is a video
+is_video() {
+    local file="$1"
+    local extension="${file##*.}"
+    extension="${extension,,}" # Convert to lowercase
+
+    # List of common video extensions
+    local video_extensions=("mp4" "avi" "mkv" "mov" "wmv" "flv" "webm" "mpg" "mpeg" "m4v")
+
+    for ext in "${video_extensions[@]}"; do
+        if [[ "$extension" == "$ext" ]]; then
+            return 0 # True, it is a video
+        fi
+    done
+
+    return 1 # False, it is not a video
+}
+
+# Function to display/play a file based on its type
+display_file() {
+    local file="$1"
+
+    # Check if the file is a video
+    if is_video "$file"; then
+        # Play video with ffplay
+        if command -v ffplay &>/dev/null; then
+            # Use ffplay with minimal interface and exit when done
+            ffplay -autoexit -loglevel quiet -nodisp -hide_banner "$file" &
+            FFPLAY_PID=$!
+            echo "Playing video: $file (press q to stop)"
+            # Wait for ffplay to finish or user to continue
+            wait $FFPLAY_PID 2>/dev/null || true
+            # If ffplay is still running, kill it
+            if kill -0 $FFPLAY_PID 2>/dev/null; then
+                kill $FFPLAY_PID 2>/dev/null || true
+            fi
+        else
+            echo "ffplay not found. Please install ffmpeg to play videos."
+            echo "Video file: $file"
+        fi
+    else
+        # Display image with imgcat or alternative viewers
+        display_image_with_viewer "$file"
+    fi
+}
+
 # Function to display help and wait for any key to continue
 display_help() {
     echo ""
@@ -156,6 +203,14 @@ while true; do
         elif [[ $REPLY == "[B" ]]; then
             # Down arrow
             next_image
+        fi
+    elif [[ $REPLY == "q" ]]; then
+        # q key - can be used to stop video playback or exit
+        # If we're displaying a video, this will just return to the loop
+        # Otherwise, we'll exit
+        if ! is_video "${all_files[$current_index]}"; then
+            echo "Exiting..."
+            exit 0
         fi
     elif [[ $REPLY == "h" ]]; then
         # h key
