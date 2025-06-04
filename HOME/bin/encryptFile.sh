@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
-pw=$1
-shift
+# Now read password on command line
+# pw=$1
+# shift
 
 SAVEIFS=$IFS
 IFS=$'\n'
@@ -8,14 +9,17 @@ IFS=$'\n'
 fileOrDirs=("$@")
 echo fileOrDirs: "${fileOrDirs[@]}"
 
-if [ -z "$pw" ]; then
-	echo USAGE: $0 PW _files Or dirs to encrypt_ - missing password
-	exit 1
-fi
-
 if [ -z "${fileOrDirs[@]}" ]; then
 	echo USAGE: $0 PW _files Or dirs to encrypt_
 	exit 2
+fi
+
+echo "Enter password"
+read -s PASS; echo; RESULT=$(echo "$PASS" | md5sum | awk '{print $1}') && pw="$PASS$RESULT"
+#echo pw: "$pw"
+if [ -z "$pw" ]; then
+	echo USAGE: $0 PW _files Or dirs to encrypt_ - missing password
+	exit 1
 fi
 
 for file in "${fileOrDirs[@]}"
