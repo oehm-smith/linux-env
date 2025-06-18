@@ -6,6 +6,7 @@ use File::Find;
 use File::Spec;
 use File::Basename;
 use List::Util qw(shuffle);
+use Cwd qw(abs_path);
 
 # Script version and database format
 my $SCRIPT_VERSION = "1.0";
@@ -18,13 +19,18 @@ my @valid_extensions = qw(jpg jpeg png gif bmp tiff webp heic mp4 avi mkv mov wm
 my %ext_lookup = map { lc($_) => 1 } @valid_extensions;
 
 # Command line options
-my ($db_file, $start_dir, $action, $outdir, $help, $simulate);
+my ($db_file, $start_dir, $action, $outdir, $help, $simulate, $debug);
 
 # Configuration
 my $script_name = basename($0, '.pl');  # Remove .pl extension for config
 my $config_dir = File::Spec->catdir($ENV{HOME}, '.config');
 my $config_file = File::Spec->catfile($config_dir, "$script_name.conf");
 
+sub debug_print {
+    my ($level, $message) = @_;
+    return unless $debug && $debug >= $level;
+    print "[DEBUG$level] $message\n";
+}
 sub show_help {
     my $script_name = basename($0);
     print <<"EOF";
@@ -49,6 +55,8 @@ OPTIONAL ARGUMENTS:
     --outdir <dir>      Output directory for encrypted files (required for number actions)
     --simulate          Perform action without calling encryptFile.sh or saving database
                         (shows what would happen, updates in-memory database only)
+    --debug <level>     Enable debug output (1-5, higher = more verbose)
+                        Level 3: Shows path rejection reasons during scanning
     --help, -h          Show this help message
 
 CONFIGURATION:
@@ -61,6 +69,9 @@ EXAMPLES:
 
     # Select 5 random files/directories for processing
     $script_name --action 5 --outdir /tmp/encrypted
+
+    # Debug scanning to see why files are rejected
+    $script_name --action rescan --debug 3
 
     # Simulate selecting 3 files (no actual encryption or database save)
     $script_name --action 3 --outdir /tmp/test --simulate
@@ -77,6 +88,7 @@ NOTES:
     - Uses encryptFile.sh (must be in PATH) for encryption
     - Database format version: 1
     - Automatically rescans on first run if database doesn't exist
+    - All paths stored as absolute paths in database
 
 EOF
 }
@@ -124,6 +136,7 @@ sub parse_arguments {
         'action|a=s' => \$action,
         'outdir=s'  => \$outdir,
         'simulate'  => \$simulate,
+        'debug=i'   => \$debug,
         'help|h'    => \$help,
     ) or die "Error parsing command line arguments. Use --help for usage.\n";
 
@@ -225,21 +238,41 @@ sub scan_directory {
     my ($dir) = @_;
     my @found_paths = ();
     
+    # Convert to absolute path
+    $dir = abs_path($dir);
     print "Scanning directory: $dir\n";
+    debug_print(1, "Starting scan of directory: $dir");
     
     find({
         wanted => sub {
             my $path = $File::Find::name;
             my $name = basename($path);
             
+            debug_print(2, "Examining: $path");
+            
+            # Convert to absolute path
+            $path = abs_path($path);
+            debug_print(2, "Absolute path: $path");
+            
             # Skip if doesn't match rating pattern
-            return unless matches_rating_pattern($name);
+            unless (matches_rating_pattern($name)) {
+                debug_print(3, "REJECTED: '$name' doesn't match rating pattern (8-10|9-10|10-10)");
+                return;
+            }
+            debug_print(2, "Rating pattern matched: $name");
             
             if (-d $path) {
+                debug_print(2, "Processing directory: $path");
+                
                 # Check if this directory contains any media files (directly or in subdirs)
-                opendir my $dh, $path or return;
+                opendir my $dh, $path or do {
+                    debug_print(3, "REJECTED: Cannot open directory '$path': $!");
+                    return;
+                };
                 my @entries = grep { $_ ne '.' && $_ ne '..' } readdir($dh);
                 closedir $dh;
+                
+                debug_print(2, "Directory contents: " . join(', ', @entries));
                 
                 my $has_subdirs = 0;
                 my $has_media_direct = 0;
@@ -248,22 +281,43 @@ sub scan_directory {
                 # Check direct contents
                 for my $entry (@entries) {
                     my $entry_path = File::Spec->catfile($path, $entry);
+                    debug_print(2, "Checking entry: $entry_path");
+                    
                     if (-d $entry_path) {
                         $has_subdirs = 1;
+                        debug_print(2, "Found subdirectory: $entry");
+                        
                         # Check if subdirectory contains media files
-                        opendir my $sub_dh, $entry_path or next;
+                        opendir my $sub_dh, $entry_path or do {
+                            debug_print(3, "Cannot open subdirectory '$entry_path': $!");
+                            next;
+                        };
                         my @sub_entries = grep { $_ ne '.' && $_ ne '..' } readdir($sub_dh);
                         closedir $sub_dh;
                         
+                        debug_print(2, "Subdirectory '$entry' contents: " . join(', ', @sub_entries));
+                        
                         for my $sub_entry (@sub_entries) {
                             my $sub_entry_path = File::Spec->catfile($entry_path, $sub_entry);
-                            if (-f $sub_entry_path && is_valid_media_file($sub_entry)) {
-                                $has_media_nested = 1;
-                                last;
+                            if (-f $sub_entry_path) {
+                                debug_print(2, "Checking file in subdir: $sub_entry");
+                                if (is_valid_media_file($sub_entry)) {
+                                    $has_media_nested = 1;
+                                    debug_print(2, "Found media file in subdir: $sub_entry");
+                                    last;
+                                } else {
+                                    debug_print(3, "File '$sub_entry' is not a valid media file");
+                                }
                             }
                         }
-                    } elsif (-f $entry_path && is_valid_media_file($entry)) {
-                        $has_media_direct = 1;
+                    } elsif (-f $entry_path) {
+                        debug_print(2, "Checking direct file: $entry");
+                        if (is_valid_media_file($entry)) {
+                            $has_media_direct = 1;
+                            debug_print(2, "Found direct media file: $entry");
+                        } else {
+                            debug_print(3, "File '$entry' is not a valid media file");
+                        }
                     }
                 }
                 
@@ -272,21 +326,35 @@ sub scan_directory {
                     push @found_paths, $path;
                     if ($has_media_direct && !$has_subdirs) {
                         print "Found leaf directory: $path\n";
+                        debug_print(1, "SELECTED: Leaf directory with media files");
                     } elsif ($has_media_direct && $has_subdirs) {
                         print "Found mixed directory: $path (has files and subdirs)\n";
+                        debug_print(1, "SELECTED: Mixed directory with direct media files");
                     } elsif ($has_media_nested) {
                         print "Found parent directory: $path (has media in subdirs)\n";
+                        debug_print(1, "SELECTED: Parent directory with media in subdirectories");
                     }
+                } else {
+                    debug_print(3, "REJECTED: Directory '$path' contains no media files (direct: $has_media_direct, nested: $has_media_nested)");
                 }
-            } elsif (-f $path && is_valid_media_file($path)) {
-                # Individual media file with matching rating pattern
-                push @found_paths, $path;
-                print "Found media file: $path\n";
+            } elsif (-f $path) {
+                debug_print(2, "Processing file: $path");
+                if (is_valid_media_file($name)) {
+                    # Individual media file with matching rating pattern
+                    push @found_paths, $path;
+                    print "Found media file: $path\n";
+                    debug_print(1, "SELECTED: Individual media file");
+                } else {
+                    debug_print(3, "REJECTED: File '$name' is not a valid media file");
+                }
+            } else {
+                debug_print(3, "REJECTED: '$path' is neither file nor directory");
             }
         },
         no_chdir => 1,
     }, $dir);
     
+    debug_print(1, "Scan complete. Found " . scalar(@found_paths) . " paths");
     return @found_paths;
 }
 
