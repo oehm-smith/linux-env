@@ -1,4 +1,40 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+#
+# encryptFile.sh - File and Directory Encryption Script
+#
+# DESCRIPTION:
+#   Encrypts files and directories using AES-256-CBC with PBKDF2 key derivation.
+#   Creates compressed tar archives before encryption for efficient storage.
+#   Supports password strengthening via MD5 hash concatenation.
+#
+# USAGE:
+#   encryptFile.sh [--outdir OUTPUT_DIR] file1 [file2 dir1 ...]
+#
+# ARGUMENTS:
+#   --outdir DIR    Optional output directory for encrypted files
+#   file/dir        Files or directories to encrypt (one or more required)
+#
+# OUTPUT:
+#   Creates .tgz.enc files containing encrypted, compressed archives
+#
+# ENCRYPTION:
+#   - Algorithm: AES-256-CBC with base64 encoding
+#   - Key derivation: PBKDF2 
+#   - Password: User input + MD5(user input) for additional entropy
+#   - Compression: gzip compression before encryption
+#
+# EXAMPLES:
+#   encryptFile.sh documents/ photos.jpg
+#   encryptFile.sh --outdir /backup files/ data.txt
+#
+# REQUIRES:
+#   - openssl command
+#   - tar command with gzip support
+#   - bash shell
+#
+# Author: [Your name]
+# Version: 1.0
+#
 
 SAVEIFS=$IFS
 IFS=$'\n'
@@ -54,12 +90,13 @@ do
     exit 1
   fi
   
-  # Determine output file path
-  encName="${fileOrDir}.tgz.enc"
+  # Determine output file path - handle directories properly
+  baseName=$(basename "${fileOrDir}")
+  encName="${baseName}.tgz.enc"
   
   # Apply output directory if specified
   if [ -n "$outdir" ]; then
-    encName="$outdir/$(basename "${fileOrDir}").tgz.enc"
+    encName="$outdir/${baseName}.tgz.enc"
   fi
   
   if [ -e "$encName" ]; then

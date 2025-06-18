@@ -1,4 +1,49 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+#
+# decryptFile.sh - File and Directory Decryption Script  
+#
+# DESCRIPTION:
+#   Decrypts .tgz.enc files created by encryptFile.sh using AES-256-CBC.
+#   Automatically decompresses tar archives and extracts contents.
+#   Supports both original and MD5-strengthened password attempts.
+#
+# USAGE:
+#   decryptFile.sh [--outdir OUTPUT_DIR] file1.tgz.enc [file2.tgz.enc ...]
+#
+# ARGUMENTS:
+#   --outdir DIR    Optional output directory for decrypted files
+#   *.tgz.enc       Encrypted files to decrypt (one or more required)
+#
+# OUTPUT:
+#   Extracts original files/directories from encrypted archives
+#
+# DECRYPTION:
+#   - Algorithm: AES-256-CBC with base64 decoding
+#   - Key derivation: PBKDF2
+#   - Password attempts: 
+#     1. User input + MD5(user input) (default from encryptFile.sh)
+#     2. Original user input only (fallback)
+#   - Decompression: Automatic gzip decompression after decryption
+#
+# PROCESS:
+#   1. Prompts for password (hidden input)
+#   2. Attempts decryption with strengthened password
+#   3. Falls back to original password if needed
+#   4. Extracts tar archive contents
+#   5. Cleans up temporary files
+#
+# EXAMPLES:
+#   decryptFile.sh documents.tgz.enc photos.tgz.enc
+#   decryptFile.sh --outdir /restore backup.tgz.enc
+#
+# REQUIRES:
+#   - openssl command
+#   - tar command with gzip support  
+#   - bash shell
+#
+# Author: [Your name]
+# Version: 1.0
+#
 
 SAVEIFS=$IFS
 IFS=$'\n'
