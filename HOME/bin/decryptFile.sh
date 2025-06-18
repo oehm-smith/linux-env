@@ -22,7 +22,7 @@ done
 
 echo encFiles: "${encFiles[@]}"
 
-if [ -z "${encFiles[@]}" ]; then
+if [ ${#encFiles[@]} -eq 0 ]; then
         echo "USAGE: $0 [--outdir OUTPUT_DIR] *files Or dirs to decrypt*"
         exit 1
 fi
