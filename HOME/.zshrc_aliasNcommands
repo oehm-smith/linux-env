@@ -1,0 +1,32 @@
+alias lse="eza"	# Alternative ls - brew install eza
+
+# Thousands - print large numbers out with thousands separators.  From https://claude.ai/chat/473a579b-e81d-409a-9f04-67448131a444
+#alias thousands="numfmt --grouping"
+#alias thousands="awk '{for(i=1; i<NF; i++) {printf \"%s \", \$i | \"numfmt --grouping\"}; print \$NF}'"
+alias thousands='perl -pe '\''s/(\d)(?=(\d{3})+($|\s))/\1,/g'\'''
+
+# Other shell commands installed
+# tldr - community man pages
+# bat - cat with formatting
+# nav - https://github.com/denisidoro/navi - Cheat sheets
+
+# 2025-06-20
+# Search CLI commands by substring and optional exact length
+# findcmd du 4 - return ncdu
+# findcmd ssh
+findcmd() {
+  local substr="$1"
+  local len="$2"
+
+  if [[ -z "$substr" ]]; then
+    echo "Usage: findcmd <substring> [length]"
+    return 1
+  fi
+
+  if [[ -n "$len" ]]; then
+    compgen -c | ggrep -E "^.{$len}$" | ggrep "$substr"
+  else
+    compgen -c | ggrep "$substr"
+  fi
+}
+

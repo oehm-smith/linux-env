@@ -50,10 +50,12 @@ source ~/.iterm2_shell_integration.zsh
 
 export PATH=$HOME/bin:/opt/homebrew/opt/openjdk/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH
 export PATH=/opt/homebrew/opt/trash/bin/:$PATH	# Add 'trash' command in.  Otherwise OSX blocks it.  Weird
+export PATH=~/.local/bin/:$PATH			# Python xv tools
 
 source ~/.zshrc_python
 source ~/.zshrc_kubernetes
 source ~/.zshrc_aliasNcommands
+source ~/.zshrc_projects
 
 # 2025-05-26 force zwh to automatically reread bins in $PATH since after `brew install` I don't see it until source shell again or `rehash`
 setopt hashall

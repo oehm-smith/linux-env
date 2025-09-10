@@ -1,0 +1,5 @@
+# Catalyst - 2025-08-28
+
+PATH=/Users/brooke/dev/AI_LLM_GPT/2025-06-02_Catalyst-EssayWritingSystem-2
+source $PATH/setup/setup_shell.sh
+alias cdcatalyst="cd $PATH"
