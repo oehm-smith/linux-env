@@ -17,7 +17,7 @@ setopt appendhistory
 set editing-mode vi
 set blink-matching-paren on
 
-alias terminator="/opt/homebrew/Cellar/terminator/2.1.4/bin/terminator"
+#alias terminator="/opt/homebrew/bin/terminator"
 alias ppm=pnpm
 
 # This loads nvm bash_completion

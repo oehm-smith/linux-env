@@ -1,4 +1,20 @@
 #!/bin/bash
+#
+# ffplay.sh - Wrapper script for video playback with optimal sizing
+#
+# This wrapper calls ffplay with calculated dimensions based on screen size.
+# Template field /Users/brooke/dev/amnesia/2025-09-17_playback will be replaced during installation.
+#
+
+# Path to installation directory (set during installation)
+INSTALL_DIR="/Users/brooke/dev/amnesia/2025-09-17_playback"
+
+# Verify the installation directory exists
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "Error: Installation directory not found at: $INSTALL_DIR" >&2
+    echo "Please check your installation or reinstall the system." >&2
+    exit 1
+fi
 
 # Check if video file is provided
 if [ $# -eq 0 ]; then

@@ -4,9 +4,14 @@
 # https://github.com/pyenv/pyenv#set-up-your-shell-environment-for-pyenv
 # export PYENV_ROOT="$HOME/.pyenv"
 export PYENV_ROOT="/opt/homebrew/opt/pyenv"
+# Add pyenv's bin directory to PATH if it exists
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
+
+# Only run pyenv init if the pyenv command is now found in PATH
+if (( $+commands[pyenv] )); then
+  eval "$(pyenv init -)"
+  eval "$(pyenv virtualenv-init -)"
+fi
 
 [[ -d $HOME/anaconda3/bin ]] && export PATH="$HOME/anaconda3/bin:$PATH"
 

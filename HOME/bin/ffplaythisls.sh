@@ -1,4 +1,20 @@
 #!/bin/bash
+#
+# ffplaythisls.sh - Wrapper script for video playlist playback
+#
+# This wrapper manages a playlist of video files with navigation controls.
+# Template field /Users/brooke/dev/amnesia/2025-09-17_playback will be replaced during installation.
+#
+
+# Path to installation directory (set during installation)
+INSTALL_DIR="/Users/brooke/dev/amnesia/2025-09-17_playback"
+
+# Verify the installation directory exists
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "Error: Installation directory not found at: $INSTALL_DIR" >&2
+    echo "Please check your installation or reinstall the system." >&2
+    exit 1
+fi
 
 VIDEO_EXTS="mp4 mkv avi mov wmv flv webm m4v 3gp mpg mpeg ts m2ts mts vob ogv"
 
@@ -30,44 +46,78 @@ get_video_files() {
     done
 }
 
-VIDEO_FILES=()
-while IFS= read -r file; do
-    VIDEO_FILES+=("$file")
-done < <(get_video_files)
-
-if [ ${#VIDEO_FILES[@]} -eq 0 ]; then
-    echo "No video files found in current directory."
-    echo "Supported formats: $VIDEO_EXTS"
-    exit 1
-fi
-
-echo "DEBUG: Video files found (in reverse alphabetical order):"
-for i in "${!VIDEO_FILES[@]}"; do
-    echo "DEBUG: [$i] = '${VIDEO_FILES[$i]}'"
-done
-echo "DEBUG: Total: ${#VIDEO_FILES[@]} files"
-echo ""
-
-START_INDEX=0
+# Check if video files were provided as arguments
 if [ $# -gt 0 ]; then
-    START_FILE="$1"
-    for i in "${!VIDEO_FILES[@]}"; do
-        if [ "${VIDEO_FILES[$i]}" = "$START_FILE" ]; then
-            START_INDEX=$i
-            break
+    # Use provided video files as the playlist
+    VIDEO_FILES=("$@")
+    
+    # Validate that all provided files exist and are video files
+    VALID_FILES=()
+    for file in "${VIDEO_FILES[@]}"; do
+        if [ ! -f "$file" ]; then
+            echo "Warning: File '$file' not found, skipping."
+            continue
+        fi
+        
+        # Check if file has a video extension
+        extension="${file##*.}"
+        extension="${extension,,}" # Convert to lowercase
+        is_video=false
+        for ext in $VIDEO_EXTS; do
+            if [ "$extension" = "$ext" ]; then
+                is_video=true
+                break
+            fi
+        done
+        
+        if [ "$is_video" = true ]; then
+            VALID_FILES+=("$file")
+        else
+            echo "Warning: '$file' doesn't appear to be a video file, skipping."
         fi
     done
     
-    if [ $START_INDEX -eq 0 ] && [ "${VIDEO_FILES[0]}" != "$START_FILE" ]; then
-        echo "Warning: File '$START_FILE' not found in video list. Starting from beginning."
+    VIDEO_FILES=("${VALID_FILES[@]}")
+    
+    if [ ${#VIDEO_FILES[@]} -eq 0 ]; then
+        echo "No valid video files provided as arguments."
+        echo "Supported formats: $VIDEO_EXTS"
+        exit 1
     fi
+    
+    echo "Using provided video files as playlist:"
+    for i in "${!VIDEO_FILES[@]}"; do
+        echo "  [$i] = '${VIDEO_FILES[$i]}'"
+    done
+    echo ""
+else
+    # No arguments provided, scan current directory for video files
+    VIDEO_FILES=()
+    while IFS= read -r file; do
+        VIDEO_FILES+=("$file")
+    done < <(get_video_files)
+    
+    if [ ${#VIDEO_FILES[@]} -eq 0 ]; then
+        echo "No video files found in current directory."
+        echo "Supported formats: $VIDEO_EXTS"
+        echo ""
+        echo "Usage: $0 [video_file1] [video_file2] ..."
+        echo "   or: $0  (to scan current directory)"
+        exit 1
+    fi
+    
+    echo "DEBUG: Video files found in current directory (in reverse alphabetical order):"
+    for i in "${!VIDEO_FILES[@]}"; do
+        echo "DEBUG: [$i] = '${VIDEO_FILES[$i]}'"
+    done
+    echo "DEBUG: Total: ${#VIDEO_FILES[@]} files"
+    echo ""
 fi
 
-CURRENT_INDEX=$START_INDEX
+CURRENT_INDEX=0
 TOTAL_FILES=${#VIDEO_FILES[@]}
 LAST_PLAYED_INDEX=-1
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FFPLAY_SCRIPT="$SCRIPT_DIR/ffplay.sh"
+FFPLAY_SCRIPT="$INSTALL_DIR/ffplay.sh"
 
 while true; do
     CURRENT_FILE="${VIDEO_FILES[$CURRENT_INDEX]}"
@@ -148,6 +198,8 @@ while true; do
             LAST_PLAYED_INDEX=$CURRENT_INDEX
             while read -r -t 0; do read -r; done
             sleep 0.5
+            # Continue to next iteration to show updated display
+            continue
         else
             echo "Reached end of playlist."
             sleep 1

@@ -1,4 +1,20 @@
 #!/bin/bash
+#
+# imgcatshow.sh - Wrapper script for image and video viewing
+#
+# This wrapper provides navigation for viewing images and videos.
+# Template field /Users/brooke/dev/amnesia/2025-09-17_playback will be replaced during installation.
+#
+
+# Path to installation directory (set during installation)
+INSTALL_DIR="/Users/brooke/dev/amnesia/2025-09-17_playback"
+
+# Verify the installation directory exists
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "Error: Installation directory not found at: $INSTALL_DIR" >&2
+    echo "Please check your installation or reinstall the system." >&2
+    exit 1
+fi
 
 # Function to display help message
 show_help() {

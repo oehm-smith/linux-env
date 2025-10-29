@@ -3,11 +3,11 @@
 # decryptFiles.sh - Wrapper script for decryptFiles.pl
 #
 # This wrapper calls the Perl decryption script with proper path resolution.
-# Template field /Users/brooke/CloudStation/Dev/amnesia/2025-06-18_selectEncRatedContent/enDeCrypt will be replaced during installation.
+# Template field /Users/brooke/dev/amnesia/2025-06-18_selectEncRatedContent/enDeCrypt will be replaced during installation.
 #
 
 # Path to enDeCrypt directory (set during installation)
-ENDECRYPT_DIR="/Users/brooke/CloudStation/Dev/amnesia/2025-06-18_selectEncRatedContent/enDeCrypt"
+ENDECRYPT_DIR="/Users/brooke/dev/amnesia/2025-06-18_selectEncRatedContent/enDeCrypt"
 
 # Verify the enDeCrypt directory exists
 if [ ! -d "$ENDECRYPT_DIR" ]; then

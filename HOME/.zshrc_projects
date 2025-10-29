@@ -1,5 +1,11 @@
+# Using Claude Code
+
+claude-w-auto-plan() { 
+	claude --append-system-prompt "\$(cat ~/.claude/system-prompts/auto-plan-mode.prompt)" "$@" 
+}
+
 # Catalyst - 2025-08-28
 
-PATH=/Users/brooke/dev/AI_LLM_GPT/2025-06-02_Catalyst-EssayWritingSystem-2
-source $PATH/setup/setup_shell.sh
-alias cdcatalyst="cd $PATH"
+THEPATH=/Users/brooke/dev/AI_LLM_GPT/2025-06-02_Catalyst-EssayWritingSystem-2
+source $THEPATH/setup/setup_shell.sh
+alias cdcatalyst="cd $THEPATH"

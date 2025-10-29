@@ -4,11 +4,11 @@
 #
 # This wrapper sets up the proper Perl module path and calls the media file processor
 # with all passed arguments. It ensures the MediaFileProcessor.pm module can be found.
-# Template field /Users/brooke/CloudStation/Dev/amnesia/2025-06-18_selectEncRatedContent/mediaFileProcessor will be replaced during installation.
+# Template field /Users/brooke/dev/amnesia/2025-06-18_selectEncRatedContent/mediaFileProcessor will be replaced during installation.
 #
 
 # Get the directory where the mediaFileProcessor scripts are located (set during installation)
-SCRIPT_DIR="/Users/brooke/CloudStation/Dev/amnesia/2025-06-18_selectEncRatedContent/mediaFileProcessor"
+SCRIPT_DIR="/Users/brooke/dev/amnesia/2025-06-18_selectEncRatedContent/mediaFileProcessor"
 
 # Verify the script directory exists
 if [ ! -d "$SCRIPT_DIR" ]; then
