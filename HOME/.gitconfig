@@ -3,7 +3,7 @@
 [user]
 	name = Brooke Smith
 	email = brooke@oehmsmith.com
-	signingKey = ""
+	signingKey = 
 [core]
 	editor = /usr/bin/vim
 	pager = less -Xr
@@ -67,15 +67,15 @@
 [pull]
 	ff = only
 [gpg]
-	format = openpgp
+	format = openpgp 
 	program = gpg
 [commit]
 	gpgSign = false
 [tag]
 	forceSignAnnotated = false
 [gpg "ssh"]
-	program = ssh-keygen
-	allowedSignersFile = ""
+	program = 
+	allowedSignersFile = 
 [pager]
 	branch = false
 [filter "lfs"]
