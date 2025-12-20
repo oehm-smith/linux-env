@@ -16,7 +16,7 @@ setopt appendhistory
 
 set editing-mode vi
 set blink-matching-paren on
-
+EDITOR=vi	# encrypt_stdin.sh
 #alias terminator="/opt/homebrew/bin/terminator"
 alias ppm=pnpm
 
