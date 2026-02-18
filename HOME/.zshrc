@@ -78,6 +78,8 @@ plugins=(vi-mode git bbedit themes poetry)
 
 source $ZSH/oh-my-zsh.sh
 
+autoload -Uz compinit && compinit
+
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"

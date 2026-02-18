@@ -1,13 +1,16 @@
 {
-  "version": 1,
+  "version": 2,
   "plugins": {
-    "superpowers@superpowers-marketplace": {
-      "version": "3.2.3",
-      "installedAt": "2025-10-24T01:07:29.977Z",
-      "lastUpdated": "2025-10-24T01:07:29.977Z",
-      "installPath": "/Users/brooke/.claude/plugins/cache/superpowers-marketplace/superpowers/3.2.3",
-      "gitCommitSha": "19e2997334eef29d0b4ab3c40a4bc124d200d1fb",
-      "isLocal": false
-    }
+    "superpowers@superpowers-marketplace": [
+      {
+        "scope": "user",
+        "installPath": "/Users/brooke/.claude/plugins/cache/superpowers-marketplace/superpowers/3.2.3",
+        "version": "3.2.3",
+        "installedAt": "2025-10-24T01:07:29.977Z",
+        "lastUpdated": "2025-10-24T01:07:29.977Z",
+        "gitCommitSha": "19e2997334eef29d0b4ab3c40a4bc124d200d1fb",
+        "isLocal": false
+      }
+    ]
   }
 }

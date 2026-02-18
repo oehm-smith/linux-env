@@ -39,21 +39,40 @@ When starting work in a NEW project (one I haven't worked on before in this sess
 
 ### Initial Questions
 
-1. **Project Complexity Assessment**:
-   ```
+1. **Development Methodology**:
+   
+   Check `~/.claude/methodologies/` for available methodologies. Present to Brooke:
+```
+   "What methodology for this project?
+   
+   Available in ~/.claude/methodologies/:
+   [Read each .md file, extract first heading line as description]
+   
+   Or: None (vibe coding - minimal process)"
+```
+
+2. **Project Complexity Assessment**:
+```
    "Quick setup questions for this project:
 
    1. Is this a simple project (< 5 files, quick task) or complex project (multi-service, long-term)?
    2. Will you be working on multiple features simultaneously here?
    3. Do you want me to use git worktrees for this project?"
-   ```
+```
 
-2. **Based on Brooke's Answers**:
+3. **Based on Brooke's Answers**:
+   
+   **Methodology:**
+   - If methodology selected → Import via `@~/.claude/methodologies/<n>.md`
+   - If "None" or "vibe" → No import, minimal process applies
+   - Record choice in journal for this project
+   
+   **Complexity & Worktrees:**
    - **Simple project** → Suggest: Disable worktrees, use simple workflow
    - **Complex project** → Suggest: Enable worktrees, offer full agent workflow
    - **Mixed/Unsure** → Default to simple, can escalate later
 
-3. **Remember the Preference**:
+4. **Remember the Preference**:
    - Record in your journal for this project
    - Check for existing `.claude-project.json` first
    - If no config exists, offer to create one with chosen settings
@@ -65,6 +84,8 @@ After getting answers, take ONE of these actions:
 **For Simple Projects**:
 ```
 "I'll work directly in the main branch without worktrees.
+Methodology: [selected methodology name, or 'vibe coding' if none].
+[If methodology selected: I've loaded the methodology rules from ~/.claude/methodologies/NAME.md]
 For simple tasks, I'll use straightforward implementation.
 If needed, I can escalate to full workflow later."
 ```
@@ -72,6 +93,8 @@ If needed, I can escalate to full workflow later."
 **For Complex Projects**:
 ```
 "I'll create a .claude-project.json to enable worktrees and structured workflow.
+Methodology: [selected methodology name].
+[I've loaded @~/.claude/methodologies/NAME.md]
 Would you like me to use the seven-agent workflow for complex features?"
 ```
 
@@ -79,7 +102,8 @@ Would you like me to use the seven-agent workflow for complex features?"
 ```
 "I see you have a .claude-project.json.
 Worktrees are [enabled/disabled].
-[If Superpowers config detected: "This was created with Superpowers - which version are you using?"]
+Methodology: [detected from project CLAUDE.md or ask if not specified].
+[If Superpowers config detected: This was created with Superpowers - which version are you using?]
 Should I continue with these settings?"
 ```
 
@@ -121,6 +145,35 @@ Should I continue with these settings?"
 Check ~/.claude/docs/git-worktrees.md for detailed guidance on when to recommend worktrees.
 
 **Default recommendation**: Start with worktrees DISABLED, enable per-project for complex work.
+
+### Methodology Quick Reference
+
+**To list available methodologies:**
+```bash
+ls ~/.claude/methodologies/*.md
+```
+
+**Methodology file format:**
+- First line: `# NAME: Short description`
+- Rest: Full methodology rules
+
+**Default recommendations (hints only, always ask):**
+
+| Path Pattern | Suggest Methodology | Suggest Worktrees |
+|--------------|---------------------|-------------------|
+| `~/bin/`, `scripts/`, `utils/` | Vibe | No |
+| `Projects/` | SRDD | Ask based on complexity |
+| `Systems/` | SCALED-SRDD | Yes (multi-domain) |
+
+**Methodology and worktrees are independent choices:**
+- Methodology = *how* we develop (process, documentation, phases)
+- Worktrees = *parallel* feature work (git branching strategy)
+
+A simple SRDD project might not need worktrees.
+A complex vibe project might benefit from worktrees.
+Always ask both questions separately.
+
+Check `~/.claude/docs/git-worktrees.md` for detailed worktree guidance.
 
 ---
 
@@ -324,14 +377,35 @@ If you catch yourself writing "new", "old", "legacy", "wrapper", "unified", or i
 
 ### Branch Workflow (CRITICAL)
 
+**DETECTING THE DEFAULT BRANCH:**
+The default branch may be `main`, `master`, or something else. YOU MUST detect it correctly:
+
+1. **At session start or when first working with a repo**, run:
+   ```bash
+   git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'
+   ```
+   If that fails (remote HEAD not set), fall back to:
+   ```bash
+   git branch -r | grep -E "origin/(main|master)$" | head -1 | sed 's@origin/@@'
+   ```
+
+2. **Store the detected branch name mentally** and use it consistently for:
+   - Creating PRs (`gh pr create --base <default-branch>`)
+   - Checking out after PR merges
+   - Rebasing feature branches
+
+3. **NEVER assume** the default branch is `main` or `master` - always detect it
+
+4. **If remote HEAD is misconfigured** (points to a feature branch), use the fallback detection and warn Brooke
+
 **BEFORE ANY COMMIT, VERIFY:**
-1. You are NOT on main/master
+1. You are NOT on the default branch (main/master)
 2. You ARE on the correct feature branch for the current task
-3. If the branch doesn't exist, create it from main FIRST
+3. If the branch doesn't exist, create it from the default branch FIRST
 4. If unsure which branch to use, ASK Brooke
 
 **When starting new work:**
-1. `git checkout main && git pull` - Always start from latest main
+1. `git checkout <default-branch> && git pull` - Always start from latest default branch
 2. Check if an issue exists for this work (create one if non-trivial)
 3. `git checkout -b feat/your-feature` - Create new branch (reference issue: `feat/123-feature-name`)
 4. THEN start coding
@@ -341,10 +415,11 @@ When using the `mcp__git__git_create_branch` tool, it creates the branch but DOE
 You MUST immediately run `mcp__git__git_checkout` or `git checkout <branch>` after creating a branch.
 NEVER assume you're on the new branch - VERIFY with `git status` before making any changes.
 
-**When a PR is merged:**
-1. Switch back to main: `git checkout main && git pull`
-2. Create new branch for next task
-3. NEVER continue committing to the old merged branch
+**When Brooke says "pr merged" or similar:**
+1. IMMEDIATELY run: `git checkout <default-branch> && git pull` (use detected default branch)
+2. Confirm you're on the default branch before proceeding
+3. Wait for next task or create new branch if continuing related work
+4. NEVER continue committing to the old merged branch
 
 **If in doubt about branches:** STOP and ask Brooke. Don't guess.
 
@@ -387,6 +462,7 @@ NEVER assume you're on the new branch - VERIFY with `git status` before making a
 - **Commit frequently**: At logical milestones (feature complete, before refactor, after passing tests)
 - **Run all tests before commit**: Unit, integration, E2E must all pass
 - **NO SURPRISES**: Discuss architectural changes with team/user before implementation
+- **PR review commits**: When addressing PR review comments, make separate commits (not `--amend`) to preserve review history and make it easy for reviewers to see what changed
 
 ### Git Commit Standards
 
@@ -705,7 +781,43 @@ During code reviews for GenAI/RAG applications, verify:
 
 ---
 
-**Last Updated**: 2025-12-16 (Added TDD bug investigation workflow with root cause tracking)
+## Documentation Maintenance
+
+**MANDATORY**: Keep project documentation up to date as you work.
+
+When completing features, bug fixes, or configuration changes, YOU MUST:
+
+1. **Check for affected documentation**:
+   - User guides (`docs/USER-GUIDE.md` or similar)
+   - Developer guides (`docs/DEVELOPER-GUIDE.md` or similar)
+   - README files
+   - API documentation
+   - Configuration examples
+
+2. **Update documentation when**:
+   - Adding new configuration options
+   - Changing port numbers or service endpoints
+   - Adding new commands or scripts
+   - Modifying environment variables
+   - Adding new features users/developers need to know about
+   - Changing setup or installation steps
+
+3. **Documentation updates should be**:
+   - Part of the same PR as the code change
+   - Clear and concise
+   - Following existing documentation style
+   - Including examples where helpful
+
+4. **Don't over-document**:
+   - Internal implementation details don't need user docs
+   - Minor refactors don't need documentation updates
+   - When in doubt, ask Brooke
+
+**The goal**: A developer or user reading the docs should always be able to set up and use the system without discovering outdated instructions.
+
+---
+
+**Last Updated**: 2025-12-29 (Added Documentation Maintenance section)
 **Applies To**: All projects - general software engineering + GenAI/LLM/RAG/MCP applications
 **Research Contributions**: Brooke's research on isolation, sandboxing, AI firewalls, framework security, MCP best practices, and Clean Code principles
 **Communication Framework**: Adapted from obra's dotfiles with Brooke's technical security standards

@@ -1,0 +1,691 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Getopt::Long;
+use File::Find;
+use File::Spec;
+use File::Basename;
+use List::Util qw(shuffle);
+use Cwd qw(abs_path);
+
+# Script version and database format
+my $SCRIPT_VERSION = "1.0";
+my $DB_FORMAT_VERSION = 1;
+
+# Global variables
+my %database;
+my $action_from = 0;
+my @valid_extensions = qw(jpg jpeg png gif bmp tiff webp heic mp4 avi mkv mov wmv flv webm m4v);
+my %ext_lookup = map { lc($_) => 1 } @valid_extensions;
+
+# Command line options
+my ($db_file, $start_dir, $action, $outdir, $help, $simulate, $debug);
+
+# Configuration
+my $script_name = basename($0, '.pl');  # Remove .pl extension for config
+my $config_dir = File::Spec->catdir($ENV{HOME}, '.config');
+my $config_file = File::Spec->catfile($config_dir, "$script_name.conf");
+
+# debug_print() - Conditional debug output based on verbosity level
+#
+# Only prints debug messages if global $debug is set and >= requested level.
+# Prefixes messages with debug level for easy filtering.
+#
+# Input: $level - Debug level (1-5, higher = more verbose)
+#        $message - Message to print
+# Output: None (prints to STDOUT if conditions met)
+sub debug_print {
+    my ($level, $message) = @_;
+    return unless $debug && $debug >= $level;  # Early exit if debug disabled or level too high
+    print "[DEBUG$level] $message\n";
+}
+
+# scan_directory() - Main directory scanning orchestrator
+# 
+# Function Flow:
+# scan_directory()
+# ├── evaluate_directory_for_selection()
+# │   ├── get_directory_contents()
+# │   ├── analyze_directory_for_media_files()
+# │   │   ├── subdirectory_contains_media_files()
+# │   │   └── check_if_file_is_valid_media()
+# │   └── classify_and_report_directory()
+# └── evaluate_file_for_selection()
+#     └── is_valid_media_file() [existing]
+#
+# Input: $dir - Starting directory path (relative or absolute)
+# Output: @found_paths - Array of absolute paths to selected files/directories
+sub scan_directory {
+    my ($dir) = @_;
+    my @found_paths = ();  # Accumulator for all selected paths
+    
+    # Convert to absolute path for consistent database storage
+    # This ensures we can run script from any directory and get consistent results
+    $dir = abs_path($dir);
+    print "Scanning directory: $dir\n";
+    debug_print(1, "Starting scan of directory: $dir");
+    
+    # Use File::Find to recursively traverse directory tree
+    # This handles all the complexity of directory traversal
+    find({
+        wanted => sub {
+            # File::Find sets these variables for each found item
+            my $path = $File::Find::name;  # Full path from File::Find
+            my $name = basename($path);    # Just the filename/dirname
+            
+            debug_print(2, "Examining: $path");
+            
+            # Convert to absolute path for database consistency
+            # Relative paths would break if script run from different directories
+            $path = abs_path($path);
+            debug_print(2, "Absolute path: $path");
+            
+            # Early exit if filename doesn't match required rating pattern
+            # This is our primary filter - only 8-10, 9-10, 10-10 allowed
+            unless (matches_rating_pattern($name)) {
+                debug_print(3, "REJECTED: '$name' doesn't match rating pattern (8-10|9-10|10-10)");
+                return;  # Skip this item entirely
+            }
+            debug_print(2, "Rating pattern matched: $name");
+            
+            # Process directories and files differently
+            # Directories need complex analysis, files just need media type check
+            if (-d $path) {
+                # Directory processing: check for media files in various configurations
+                my $result = evaluate_directory_for_selection($path);
+                push @found_paths, $path if $result;  # Only add if evaluation passed
+            } elsif (-f $path) {
+                # File processing: simpler check for media file type
+                my $result = evaluate_file_for_selection($path, $name);
+                push @found_paths, $path if $result;  # Only add if evaluation passed
+            } else {
+                # Neither file nor directory - unusual but possible (symlinks, devices, etc.)
+                debug_print(3, "REJECTED: '$path' is neither file nor directory");
+            }
+        },
+        no_chdir => 1,  # Keep current working directory unchanged during traversal
+    }, $dir);
+    
+    # Report final results
+    debug_print(1, "Scan complete. Found " . scalar(@found_paths) . " paths");
+    return @found_paths;
+}
+
+# evaluate_directory_for_selection() - Determines if a directory should be selected
+# 
+# Orchestrates the analysis of a directory to determine if it contains media files
+# either directly or in immediate subdirectories, then makes selection decision.
+#
+# Input: $path - Absolute path to directory to evaluate
+# Output: 1 if directory should be selected, 0 if rejected
+sub evaluate_directory_for_selection {
+    my ($path) = @_;
+    
+    debug_print(2, "Processing directory: $path");
+    
+    # Step 1: Get directory contents safely with error handling
+    # If we can't read the directory, we can't process it
+    my $directory_contents = get_directory_contents($path);
+    return 0 unless $directory_contents;  # Bail out if directory unreadable
+    
+    # Step 2: Analyze directory structure for media files
+    # This determines what types of content the directory contains
+    my $media_analysis = analyze_directory_for_media_files($path, $directory_contents);
+    
+    # Step 3: Make final selection decision and report result
+    # Based on the analysis, decide if directory qualifies for selection
+    return classify_and_report_directory($path, $media_analysis);
+}
+
+# get_directory_contents() - Safely reads directory entries
+#
+# Opens directory handle, reads all entries except '.' and '..', handles errors gracefully.
+#
+# Input: $path - Absolute path to directory
+# Output: \@entries - Array reference to directory entries, or undef on error
+sub get_directory_contents {
+    my ($path) = @_;
+    
+    # Try to open directory, handle failure gracefully
+    opendir my $dh, $path or do {
+        # Log the specific error and return failure
+        debug_print(3, "REJECTED: Cannot open directory '$path': $!");
+        return undef;  # Signal failure to caller
+    };
+    
+    # Read all entries except current/parent directory references
+    # These are standard directory entries that we don't want to process
+    my @entries = grep { $_ ne '.' && $_ ne '..' } readdir($dh);
+    closedir $dh;  # Clean up file handle
+    
+    # Log what we found for debugging purposes
+    debug_print(2, "Directory contents: " . join(', ', @entries));
+    return \@entries;  # Return reference to entries array
+}
+
+# analyze_directory_for_media_files() - Examines directory structure for media content
+#
+# Iterates through directory entries to determine:
+# - Whether subdirectories exist
+# - Whether media files exist directly in directory  
+# - Whether media files exist in immediate subdirectories
+#
+# Input: $path - Absolute path to directory
+#        $entries - Array reference to directory entry names
+# Output: \%analysis - Hash reference with analysis results:
+#         {has_subdirs => 0/1, has_media_direct => 0/1, has_media_nested => 0/1}
+sub analyze_directory_for_media_files {
+    my ($path, $entries) = @_;
+    
+    # Initialize analysis results structure
+    # These flags will be set as we discover different types of content
+    my %analysis = (
+        has_subdirs => 0,      # Directory contains subdirectories
+        has_media_direct => 0, # Directory contains media files directly
+        has_media_nested => 0  # Subdirectories contain media files
+    );
+    
+    # Examine each entry in the directory
+    # We need to check both files and subdirectories
+    for my $entry (@$entries) {
+        # Build full path for proper file system checks
+        my $entry_path = File::Spec->catfile($path, $entry);
+        debug_print(2, "Checking entry: $entry_path");
+        
+        if (-d $entry_path) {
+            # Found a subdirectory
+            $analysis{has_subdirs} = 1;  # Mark that subdirectories exist
+            debug_print(2, "Found subdirectory: $entry");
+            
+            # Check if this subdirectory contains media files
+            # This is important for parent directory selection logic
+            if (subdirectory_contains_media_files($entry_path)) {
+                $analysis{has_media_nested} = 1;  # Mark nested media found
+            }
+        } elsif (-f $entry_path) {
+            # Found a regular file, check if it's a media file
+            if (check_if_file_is_valid_media($entry)) {
+                $analysis{has_media_direct} = 1;  # Mark direct media found
+                debug_print(2, "Found direct media file: $entry");
+            }
+            # Non-media files are ignored but don't affect selection
+        }
+        # Other file types (symlinks, devices, etc.) are ignored
+    }
+    
+    # Return analysis results for decision making
+    return \%analysis;
+}
+
+# subdirectory_contains_media_files() - Checks if a subdirectory has media files
+#
+# Opens subdirectory and examines its contents for valid media files.
+# Only checks immediate files, does not recurse further.
+#
+# Input: $subdir_path - Absolute path to subdirectory to check
+# Output: 1 if subdirectory contains media files, 0 otherwise
+sub subdirectory_contains_media_files {
+    my ($subdir_path) = @_;
+    
+    # Try to open subdirectory, handle permission errors gracefully
+    opendir my $sub_dh, $subdir_path or do {
+        # Log error but don't fail the entire scan
+        debug_print(3, "Cannot open subdirectory '$subdir_path': $!");
+        return 0;  # Treat unreadable directories as having no media
+    };
+    
+    # Read subdirectory contents (excluding . and ..)
+    my @sub_entries = grep { $_ ne '.' && $_ ne '..' } readdir($sub_dh);
+    closedir $sub_dh;  # Clean up file handle
+    
+    # Log subdirectory contents for debugging
+    debug_print(2, "Subdirectory '" . basename($subdir_path) . "' contents: " . join(', ', @sub_entries));
+    
+    # Check each file in subdirectory for media file validity
+    # We only need to find one media file to qualify the parent directory
+    for my $sub_entry (@sub_entries) {
+        # Build full path for file system check
+        my $sub_entry_path = File::Spec->catfile($subdir_path, $sub_entry);
+        
+        # Only check regular files (ignore subdirectories at this level)
+        if (-f $sub_entry_path && check_if_file_is_valid_media($sub_entry)) {
+            debug_print(2, "Found media file in subdir: $sub_entry");
+            return 1;  # Found at least one media file - that's enough
+        }
+    }
+    
+    return 0;  # No media files found in this subdirectory
+}
+
+# check_if_file_is_valid_media() - Validates if file is a supported media type
+#
+# Wrapper around is_valid_media_file() that adds debug logging.
+# Checks file extension against list of supported image/video formats.
+#
+# Input: $filename - Just the filename (not full path)
+# Output: 1 if file is valid media type, 0 otherwise
+sub check_if_file_is_valid_media {
+    my ($filename) = @_;
+    
+    debug_print(2, "Checking if file is valid media: $filename");
+    
+    # Use existing media validation function with debug wrapper
+    if (is_valid_media_file($filename)) {
+        return 1;  # File passed media type validation
+    } else {
+        # Log rejection reason for debugging
+        debug_print(3, "File '$filename' is not a valid media file");
+        return 0;  # File is not a supported media type
+    }
+}
+
+# classify_and_report_directory() - Makes final selection decision and reports result
+#
+# Based on media analysis results, determines if directory should be selected
+# and provides appropriate user feedback about the decision.
+#
+# Input: $path - Absolute path to directory
+#        $analysis - Hash reference with media analysis results
+# Output: 1 if directory selected, 0 if rejected
+sub classify_and_report_directory {
+    my ($path, $analysis) = @_;
+    
+    # Extract analysis results for readability
+    my $has_media_direct = $analysis->{has_media_direct};
+    my $has_media_nested = $analysis->{has_media_nested};
+    my $has_subdirs = $analysis->{has_subdirs};
+    
+    # Selection logic: directory qualifies if it has media files anywhere
+    # This includes both direct files and files in immediate subdirectories
+    if ($has_media_direct || $has_media_nested) {
+        # Directory qualifies - classify the type and report appropriately
+        # Different types help users understand what was found
+        
+        if ($has_media_direct && !$has_subdirs) {
+            # Pure leaf directory: only contains files, no subdirectories
+            print "Found leaf directory: $path\n";
+            debug_print(1, "SELECTED: Leaf directory with media files");
+        } elsif ($has_media_direct && $has_subdirs) {
+            # Mixed directory: contains both files and subdirectories
+            print "Found mixed directory: $path (has files and subdirs)\n";
+            debug_print(1, "SELECTED: Mixed directory with direct media files");
+        } elsif ($has_media_nested) {
+            # Parent directory: no direct files but subdirectories have media
+            print "Found parent directory: $path (has media in subdirs)\n";
+            debug_print(1, "SELECTED: Parent directory with media in subdirectories");
+        }
+        return 1;  # Directory selected for processing
+    } else {
+        # Directory doesn't qualify - no media files found anywhere
+        debug_print(3, "REJECTED: Directory '$path' contains no media files (direct: $has_media_direct, nested: $has_media_nested)");
+        return 0;  # Directory rejected
+    }
+}
+
+# evaluate_file_for_selection() - Determines if an individual file should be selected
+#
+# Checks if a file with matching rating pattern is a valid media file type.
+# This is simpler than directory evaluation since we just check the file itself.
+#
+# Input: $path - Absolute path to file
+#        $name - Just the filename (used for media type checking)
+# Output: 1 if file should be selected, 0 if rejected
+sub evaluate_file_for_selection {
+    my ($path, $name) = @_;
+    
+    debug_print(2, "Processing file: $path");
+    
+    # Check if this file is a supported media type
+    # Rating pattern was already validated by caller
+    if (is_valid_media_file($name)) {
+        # File qualifies for selection
+        print "Found media file: $path\n";
+        debug_print(1, "SELECTED: Individual media file");
+        return 1;  # File selected for processing
+    } else {
+        # File has correct rating pattern but wrong type (e.g., text file)
+        debug_print(3, "REJECTED: File '$name' is not a valid media file");
+        return 0;  # File rejected
+    }
+}
+
+sub show_help {
+    my $script_name = basename($0);
+    print <<"EOF";
+$script_name - Media File Processing and Encryption Script
+
+DESCRIPTION:
+    Recursively scans for directories/files starting with '8-10', '9-10', or '10-10'
+    containing image/video files. Tracks processing history in a database and can
+    randomly select files for encryption using encryptFile.sh.
+
+USAGE:
+    $script_name [OPTIONS]
+
+OPTIONAL ARGUMENTS:
+    --db <file>         Database file to track processed files/directories
+                        (if not specified, reads from ~/.config/[scriptname].conf)
+    --start <dir>       Starting directory for scan (default: current directory)
+    --action <action>   Action to perform:
+                          <number>  - Select N random unprocessed files/dirs
+                          reset     - Reset processing cycle (increment action_from)
+                          rescan    - Re-scan filesystem and update database
+    --outdir <dir>      Output directory for encrypted files (required for number actions)
+    --simulate          Perform action without calling encryptFile.sh or saving database
+                        (shows what would happen, updates in-memory database only)
+    --debug <level>     Enable debug output (1-5, higher = more verbose)
+                        Level 3: Shows path rejection reasons during scanning
+    --help, -h          Show this help message
+
+CONFIGURATION:
+    On first run, creates ~/.config/[scriptname].conf with the --db path.
+    Subsequent runs will use this configuration unless --db is explicitly provided.
+
+EXAMPLES:
+    # Initial setup (creates config file and scans)
+    $script_name --db ./media.db
+
+    # Select 5 random files/directories for processing
+    $script_name --action 5 --outdir /tmp/encrypted
+
+    # Debug scanning to see why files are rejected
+    $script_name --action rescan --debug 3
+
+    # Simulate selecting 3 files (no actual encryption or database save)
+    $script_name --action 3 --outdir /tmp/test --simulate
+
+    # Reset processing cycle when all files have been processed
+    $script_name --action reset
+
+    # Rescan for new files
+    $script_name --action rescan --start /media/photos
+
+NOTES:
+    - Only processes image/video files with common extensions
+    - Directories must start with '8-10', '9-10', or '10-10' to be considered
+    - Uses encryptFile.sh (must be in PATH) for encryption
+    - Database format version: 1
+    - Automatically rescans on first run if database doesn't exist
+    - All paths stored as absolute paths in database
+
+EOF
+}
+
+sub load_config {
+    return unless -f $config_file;
+    
+    open my $config_fh, '<', $config_file or die "Cannot read config file '$config_file': $!\n";
+    
+    while (my $line = <$config_fh>) {
+        chomp $line;
+        next if $line =~ /^\s*$/ || $line =~ /^#/;
+        
+        if ($line =~ /^db_file=(.+)$/) {
+            $db_file ||= $1;  # Only set if not already specified on command line
+        }
+    }
+    
+    close $config_fh;
+}
+
+sub save_config {
+    # Create config directory if it doesn't exist
+    unless (-d $config_dir) {
+        mkdir $config_dir or die "Cannot create config directory '$config_dir': $!\n";
+    }
+    
+    open my $config_fh, '>', $config_file or die "Cannot write config file '$config_file': $!\n";
+    
+    my $script_name = basename($0);
+    print $config_fh "# $script_name configuration\n";
+    print $config_fh "db_file=$db_file\n";
+    
+    close $config_fh;
+    print "Saved configuration to: $config_file\n";
+}
+
+sub parse_arguments {
+    # Load config first
+    load_config();
+    
+    GetOptions(
+        'db=s'      => \$db_file,
+        'start=s'   => \$start_dir,
+        'action|a=s' => \$action,
+        'outdir=s'  => \$outdir,
+        'simulate'  => \$simulate,
+        'debug=i'   => \$debug,
+        'help|h'    => \$help,
+    ) or die "Error parsing command line arguments. Use --help for usage.\n";
+
+    if ($help) {
+        show_help();
+        exit 0;
+    }
+
+    # If no db_file specified and no config exists, require it
+    unless ($db_file) {
+        my $script_name = basename($0);
+        print STDERR "Error: --db argument is required (or set in ~/.config/$script_name.conf)\n\n";
+        show_help();
+        exit 1;
+    }
+
+    # Save config if db_file was specified on command line
+    if ($db_file && (!-f $config_file || !load_config())) {
+        save_config();
+    }
+
+    # Set defaults
+    $start_dir ||= '.';
+    
+    # Validate action-specific requirements
+    if ($action && $action =~ /^\d+$/ && !$outdir) {
+        print STDERR "Error: --outdir is required when action is a number\n\n";
+        show_help();
+        exit 1;
+    }
+}
+
+sub load_database {
+    %database = ();
+    $action_from = 0;
+    
+    my $db_exists = -f $db_file;
+    
+    if (!$db_exists) {
+        print "Database file '$db_file' doesn't exist. Will perform initial rescan.\n";
+        return;
+    }
+    
+    open my $db_fh, '<', $db_file or die "Cannot read database file '$db_file': $!\n";
+    
+    my $format_version;
+    while (my $line = <$db_fh>) {
+        chomp $line;
+        next if $line =~ /^\s*$/ || $line =~ /^#/;
+        
+        if ($line =~ /^db_format=(\d+)$/) {
+            $format_version = $1;
+            if ($format_version != $DB_FORMAT_VERSION) {
+                die "Database format version $format_version not supported. Expected version $DB_FORMAT_VERSION\n";
+            }
+        } elsif ($line =~ /^action_from=(\d+)$/) {
+            $action_from = $1;
+        } elsif ($line =~ /^(.+)=(\d+)$/) {
+            $database{$1} = $2;
+        }
+    }
+    
+    close $db_fh;
+    print "Loaded database: " . scalar(keys %database) . " entries, action_from=$action_from\n";
+}
+
+sub save_database {
+    if ($simulate) {
+        print "[SIMULATE] Would save database: " . scalar(keys %database) . " entries, action_from=$action_from\n";
+        return;
+    }
+    
+    open my $db_fh, '>', $db_file or die "Cannot write database file '$db_file': $!\n";
+    
+    print $db_fh "db_format=$DB_FORMAT_VERSION\n";
+    print $db_fh "action_from=$action_from\n";
+    
+    for my $path (sort keys %database) {
+        print $db_fh "$path=$database{$path}\n";
+    }
+    
+    close $db_fh;
+    print "Saved database: " . scalar(keys %database) . " entries, action_from=$action_from\n";
+}
+
+sub is_valid_media_file {
+    my ($file) = @_;
+    my $ext = lc((fileparse($file, qr/\.[^.]*/))[2]);
+    $ext =~ s/^\.//;  # Remove leading dot
+    return exists $ext_lookup{$ext};
+}
+
+sub matches_rating_pattern {
+    my ($name) = @_;
+    return $name =~ /^(?:8-10|9-10|10-10)/;
+}
+
+sub rescan_filesystem {
+    print "Rescanning filesystem starting from: $start_dir\n";
+    my @found_paths = scan_directory($start_dir);
+    
+    # Add new paths to database
+    my $new_count = 0;
+    for my $path (@found_paths) {
+        unless (exists $database{$path}) {
+            $database{$path} = 0;
+            $new_count++;
+        }
+    }
+    
+    print "Found $new_count new paths, total in database: " . scalar(keys %database) . "\n";
+}
+
+sub select_random_files {
+    my ($count) = @_;
+    
+    # Get files that haven't been processed at current action_from level
+    my @available = grep { $database{$_} <= $action_from } keys %database;
+    
+    if (@available == 0) {
+        print "All files have been processed at action_from level $action_from.\n";
+        print "Use 'reset' action to increment the processing cycle.\n";
+        return ();
+    }
+    
+    # Sort by action count (prefer lower counts)
+    @available = sort { $database{$a} <=> $database{$b} } @available;
+    
+    # If we need more files than available, take all available
+    $count = @available if $count > @available;
+    
+    # Shuffle files with the same (lowest) action count
+    my $lowest_count = $database{$available[0]};
+    my @lowest_files = grep { $database{$_} == $lowest_count } @available;
+    my @higher_files = grep { $database{$_} > $lowest_count } @available;
+    
+    @lowest_files = shuffle(@lowest_files);
+    @available = (@lowest_files, @higher_files);
+    
+    # Select the requested number
+    my @selected = splice(@available, 0, $count);
+    
+    print "Selected $count files/directories:\n";
+    for my $path (@selected) {
+        my $old_count = $database{$path};
+        print "  $path (previously actioned $old_count times";
+        if ($simulate) {
+            print " -> would become " . ($old_count + 1) . ")\n";
+            # In simulate mode, temporarily update for display but don't actually change
+        } else {
+            $database{$path}++;
+            print " -> now " . $database{$path} . ")\n";
+        }
+    }
+    
+    return @selected;
+}
+
+sub encrypt_files {
+    my (@paths) = @_;
+    
+    return unless @paths;
+    
+    # Build command
+    my @cmd = ('encryptFile.sh');
+    push @cmd, '--outdir', $outdir if $outdir;
+    push @cmd, @paths;
+    
+    if ($simulate) {
+        print "[SIMULATE] Would execute: " . join(' ', @cmd) . "\n";
+        print "[SIMULATE] Encryption would process " . scalar(@paths) . " files/directories.\n";
+        return;
+    }
+    
+    print "Executing: " . join(' ', @cmd) . "\n";
+    
+    # Execute encryptFile.sh
+    my $result = system(@cmd);
+    
+    if ($result == 0) {
+        print "Encryption completed successfully.\n";
+    } else {
+        print "Encryption failed with exit code: " . ($result >> 8) . "\n";
+        exit 1;
+    }
+}
+
+sub main {
+    parse_arguments();
+    load_database();
+    
+    # Auto-rescan if database doesn't exist
+    my $needs_initial_scan = !-f $db_file || scalar(keys %database) == 0;
+    
+    if (!$action) {
+        if ($needs_initial_scan) {
+            print "No action specified and database is empty. Performing initial rescan...\n";
+            rescan_filesystem();
+            save_database();
+        } else {
+            print "No action specified. Use --help for usage information.\n";
+        }
+        exit 0;
+    }
+    
+    if ($action eq 'rescan') {
+        rescan_filesystem();
+    } elsif ($action eq 'reset') {
+        my $old_action_from = $action_from;
+        $action_from++;
+        if ($simulate) {
+            print "[SIMULATE] Would reset processing cycle. action_from would change from $old_action_from to $action_from.\n";
+        } else {
+            print "Reset processing cycle. action_from changed from $old_action_from to $action_from.\n";
+        }
+    } elsif ($action =~ /^\d+$/) {
+        # Auto-rescan if needed before selecting files
+        if ($needs_initial_scan) {
+            print "Database is empty. Performing initial rescan before selection...\n";
+            rescan_filesystem();
+        }
+        
+        my @selected = select_random_files($action);
+        encrypt_files(@selected) if @selected;
+    } else {
+        print STDERR "Invalid action '$action'. Use --help for valid actions.\n";
+        exit 1;
+    }
+    
+    save_database();
+}
+
+# Run the script
+main();

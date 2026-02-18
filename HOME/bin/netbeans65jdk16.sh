@@ -1,0 +1,1 @@
+/opt/linux-env/HOME/bin/rabbit_2020-04-04/netbeans65jdk16.sh

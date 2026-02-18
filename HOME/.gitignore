@@ -1,0 +1,9 @@
+.claude.bak
+.claude/plugins/cache
+.claude/todos
+.claude/shell-snapshots
+.claude/projects
+.claude/file-history
+.claude/debug
+.claude/ide
+.claude/history.jsonl

@@ -60,3 +60,6 @@ source ~/.zshrc_projects
 # 2025-05-26 force zwh to automatically reread bins in $PATH since after `brew install` I don't see it until source shell again or `rehash`
 setopt hashall
 
+# 2026-01-15 - tab completion.  This tells zsh: "if you don't know what to complete, fall back to files."
+zstyle ':completion:*' completer _complete _ignored _files
+

@@ -2,7 +2,7 @@
 # Also see his .gitconfig - https://github.com/durdn/cfg/blob/master/.gitconfig
 [user]
 	name = Brooke Smith
-	email = brooke@oehmsmith.com
+	email = 2556595+oehm-smith@users.noreply.github.com
 	signingKey = 
 [core]
 	editor = /usr/bin/vim
@@ -62,6 +62,7 @@
 
 [push]
 	default = simple
+	autoSetupRemote = true
 [gui]
 	fontdiff = -family Menlo -size 12 -weight normal -slant roman -underline 0 -overstrike 0
 [pull]
