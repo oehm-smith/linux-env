@@ -187,6 +187,14 @@ When asked to do something, just do it - including obvious follow-up actions nee
 
 ---
 
+## Skills Organization
+
+- **Implementation skills**: Use Superpowers (TDD, systematic debugging, verification, code review)
+- **Design skills**: Say "design phase" or "let's design" to access SWECOM-style skills via phase-router
+- **Phase-router**: Auto-discovers `~/.claude/skills-*/` directories for on-demand loading
+
+---
+
 ## Clean Code & Documentation Standards
 
 ### File Headers
@@ -252,72 +260,6 @@ For complex modules, add comprehensive headers documenting:
 - Advanced software engineer following SOLID principles
 - Apply Gang of Four (GoF) design patterns where appropriate
 - Follow major software engineering design principles
-
----
-
-## Test-Driven Development (TDD)
-
-**MANDATORY**: FOR EVERY NEW FEATURE OR BUGFIX, YOU MUST follow Test Driven Development.
-
-### For New Features (RED-GREEN-REFACTOR):
-
-1. **Write failing test first** - Define expected behavior and confirm it fails as expected
-2. **Implement minimal code to pass** - Write ONLY enough code to make the failing test pass
-3. **Run the test to confirm success**
-4. **Refactor while tests stay green** - Improve code quality
-5. **Repeat** for each feature
-
-### For Bug Fixes (TDD Bug Investigation):
-
-**CRITICAL**: When a bug is found, YOU MUST follow this process:
-
-1. **Analyze and identify root cause hypothesis**
-   - Read error messages, logs, and stack traces carefully
-   - Form a clear hypothesis about what is causing the bug
-   - Document your hypothesis (don't just think it - write it down)
-
-2. **Write a failing test that reproduces the bug**
-   - The test MUST fail before you fix anything
-   - The test should verify the correct behavior, not the buggy behavior
-   - If you can't write a failing test, you don't understand the bug yet
-
-3. **Fix the code until the test passes**
-   - Make the smallest change necessary
-   - Run the test after each change
-
-4. **If the fix doesn't solve the problem:**
-   - DO NOT remove your previous hypothesis from consideration yet
-   - Return to analysis to find a DIFFERENT potential root cause
-   - There may be MULTIPLE root causes - keep track of all of them
-   - Write additional tests for each new hypothesis
-   - Only eliminate a hypothesis when you can PROVE it's not a root cause
-
-5. **Verify all related tests pass**
-   - Run the full test suite
-   - Ensure you haven't broken anything else
-
-**Root Cause Tracking:**
-- Maintain a list of potential root causes as you investigate
-- Mark each as: `investigating`, `confirmed`, `disproved`
-- A root cause is only `disproved` when you have evidence it's not contributing
-- Multiple root causes can be `confirmed` - bugs often have compound causes
-
-**Example Bug Investigation:**
-```
-Bug: Services not registering with health-supervisor
-
-Hypothesis 1: REDIS_URL not set → DISPROVED (checked, it's set)
-Hypothesis 2: Redis connection failing → DISPROVED (tested, connection works)
-Hypothesis 3: HealthTracker not in container → CONFIRMED (missing from Dockerfile)
-Hypothesis 4: Wrong Redis instance → Still investigating...
-```
-
-### Test Types:
-- **Unit Tests**: Individual functions/methods in isolation
-- **Integration Tests**: Component interactions
-- **E2E Tests**: Full user workflows
-- **Security Tests**: Dependency scanning, vulnerability checks
-- **Regression Tests**: Tests written during bug fixes to prevent recurrence
 
 ---
 
@@ -526,39 +468,6 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ---
 
-## Systematic Debugging Process
-
-YOU MUST ALWAYS find the root cause of any issue you are debugging
-YOU MUST NEVER fix a symptom or add a workaround instead of finding a root cause, even if it is faster or I seem like I'm in a hurry.
-
-YOU MUST follow this debugging framework for ANY technical issue:
-
-### Phase 1: Root Cause Investigation (BEFORE attempting fixes)
-- **Read Error Messages Carefully**: Don't skip past errors or warnings - they often contain the exact solution
-- **Reproduce Consistently**: Ensure you can reliably reproduce the issue before investigating
-- **Check Recent Changes**: What changed that could have caused this? Git diff, recent commits, etc.
-
-### Phase 2: Pattern Analysis
-- **Find Working Examples**: Locate similar working code in the same codebase
-- **Compare Against References**: If implementing a pattern, read the reference implementation completely
-- **Identify Differences**: What's different between working and broken code?
-- **Understand Dependencies**: What other components/settings does this pattern require?
-
-### Phase 3: Hypothesis and Testing
-1. **Form Single Hypothesis**: What do you think is the root cause? State it clearly
-2. **Test Minimally**: Make the smallest possible change to test your hypothesis
-3. **Verify Before Continuing**: Did your test work? If not, form new hypothesis - don't add more fixes
-4. **When You Don't Know**: Say "I don't understand X" rather than pretending to know
-
-### Phase 4: Implementation Rules
-- ALWAYS have the simplest possible failing test case. If there's no test framework, it's ok to write a one-off test script.
-- NEVER add multiple fixes at once
-- NEVER claim to implement a pattern without reading it completely first
-- ALWAYS test after each change
-- IF your first fix doesn't work, STOP and re-analyze rather than adding more fixes
-
----
-
 ## Security Requirements
 
 ### Dependency Management
@@ -579,195 +488,16 @@ YOU MUST follow this debugging framework for ANY technical issue:
 
 ---
 
-## GenAI RAG Application Security Requirements
+## GenAI/RAG Security
 
-**CRITICAL**: All Generative AI and RAG (Retrieval-Augmented Generation) applications MUST follow these security principles:
+For GenAI and RAG applications, follow security best practices. For detailed checklists and guidance, use the design phase security-audit skill.
 
-### 1. Input Validation & Sanitization
-- **Validate ALL user inputs** before processing or passing to LLM/vector stores
-- **Sanitize prompts** to prevent prompt injection attacks
-- **Limit input length** to prevent resource exhaustion
-- **Reject suspicious patterns**: SQL-like queries, command injection attempts, escape sequences
-
-### 2. Prompt Injection Prevention
-- **Use structured prompts** with clear delimiters between system instructions and user input
-- **Escape user content** when embedding in prompts
-- **Implement guardrails** to detect and block injection attempts
-- **Never trust LLM output** for security decisions or code execution
-
-### 3. Data Privacy & PII Protection
-- **Never log sensitive data**: API keys, user PII, confidential documents
-- **Redact PII** from embeddings and vector stores
-- **Implement data retention policies** for vector databases
-- **Use encryption** for data at rest and in transit
-- **Audit data access** and maintain compliance logs
-
-### 4. Vector Database Security
-- **Isolate tenant data** in multi-tenant RAG systems (namespace isolation)
-- **Implement access controls** on vector collections
-- **Validate embeddings** before storage to prevent poisoning attacks
-- **Monitor for anomalies** in retrieval patterns
-- **Use least-privilege access** for database connections
-
-### 5. LLM API Security
-- **Store API keys in environment variables** or secure vaults (never in code)
-- **Implement rate limiting** to prevent abuse and cost overruns
-- **Set token limits** for input/output to control costs
-- **Use retry logic with exponential backoff** for API failures
-- **Monitor API usage** and set budget alerts
-- **Validate API responses** before using in application logic
-- **Provider transparency**: Include provider, model, and fallback status in all LLM responses
-- **Graceful degradation**: Implement rule-based fallback when LLM APIs fail
-- **Fallback indication**: Clearly mark responses when fallback is used (e.g., `fallback: true`)
-- **Error context**: Log LLM errors but never expose API keys or sensitive config in logs
-
-### 6. Output Validation & Safety
-- **Filter LLM outputs** for sensitive information leakage
-- **Validate generated code/SQL** before execution (never auto-execute)
-- **Implement content moderation** for user-facing outputs
-- **Log and review** potentially harmful generations
-- **Use safety classifiers** to detect toxicity, bias, or harmful content
-
-### 7. Isolation and Sandboxing (CRITICAL for RAG)
-- **Containerize AI components** using Docker/Kubernetes with clearly defined boundaries
-- **Implement RASP** (Runtime Application Self-Protection) to monitor for unusual behavior
-- **Memory isolation** between retrieval and generation components to prevent cross-contamination
-- **Use secure enclaves** (Intel SGX, AWS Nitro Enclaves) for processing highly sensitive data
-- **Separate containers** for embedding, retrieval, and generation services
-- **Network segmentation** to isolate AI workloads from other infrastructure
-
-### 8. AI Firewall and I/O Scanning
-- **Deploy AI firewall** as a protective layer validating all inputs/outputs against security policies
-- **Prompt injection detection** using pattern matching, ML classifiers, and anomaly detection
-- **Content filtering** to prevent retrieval of sensitive, harmful, or unauthorized information
-- **Rate limiting** at multiple levels (per-user, per-endpoint, global) to prevent resource exhaustion
-- **Input sanitization gateway** before data reaches the LLM or vector store
-- **Output inspection** to detect and block sensitive data exfiltration attempts
-
-### 9. Authentication, Authorization & Zero-Trust
-- **Zero-trust architecture**: Verify every request regardless of source (never trust, always verify)
-- **Implement RBAC** (Role-Based Access Control) for document access and AI service accounts
-- **Just-in-time (JIT) access provisioning** - grant elevated privileges only when needed, with time limits
-- **Granular permissions** for document repositories, knowledge bases, and vector collections
-- **Validate user permissions** before retrieval from vector store
-- **Use session management** with secure tokens (JWT with proper expiration)
-- **Implement MFA** for admin access to RAG infrastructure
-- **Audit logging** of all access attempts, privilege escalations, and security events
-
-### 10. Adversarial Robustness
-- **Test for prompt injection attacks** in CI/CD pipeline
-- **Monitor for extraction attacks** (attempting to extract training data)
-- **Detect jailbreak attempts** (bypassing safety guardrails)
-- **Implement anomaly detection** for unusual query patterns
-- **Rate limit per-user** to prevent reconnaissance attacks
-
-### 11. Framework and Implementation Best Practices
-- **Use secure RAG frameworks**: LangChain, LlamaIndex with built-in security features
-- **Leverage framework security modules** for input validation, output filtering, and secure retrieval
-- **Implement secure patterns** provided by frameworks (e.g., ConversationBufferWindowMemory, SafeOutputParser)
-- **Follow framework security guidelines** and keep libraries updated
-- **Use framework-provided authentication/authorization** integrations
-
-### 12. Dependency & Supply Chain Security
-- **Audit all LLM/RAG dependencies** (langchain, llamaindex, vector DBs)
-- **Use SBOMs** (Software Bill of Materials) to track components
-- **Pin dependency versions** and review updates carefully
-- **Scan for vulnerabilities** with npm audit, Snyk, or Dependabot
-- **Monitor CVEs** for LLM frameworks and vector databases
-
-### 13. Monitoring, Testing & Incident Response
-- **Log all RAG operations**: queries, retrievals, generations, errors
-- **Set up alerting** for suspicious patterns or security events
-- **Implement audit trails** for compliance (GDPR, HIPAA, SOC 2)
-- **AI-specific penetration testing**: Test for prompt injection, model extraction, jailbreaks
-- **Regular security audits** of RAG infrastructure with AI security expertise
-- **Have incident response plan** for data breaches or model poisoning
-- **Conduct red team exercises** targeting AI vulnerabilities
-
-### 14. Model & Data Governance
-- **Document data sources** used for embeddings (provenance)
-- **Implement model versioning** for reproducibility
-- **Test for bias and fairness** in retrieval and generation
-- **Maintain data lineage** for regulatory compliance
-- **Regular compliance reviews** with legal and security teams
-
-### 15. Secure Deployment Practices
-- **Use HTTPS/TLS** for all API endpoints
-- **Implement CSP** (Content Security Policy) for web interfaces
-- **Disable debug modes** in production
-- **Use secrets management** (HashiCorp Vault, AWS Secrets Manager, Docker Secrets)
-- **Container security**: scan images, run as non-root, use read-only filesystems
-- **Network isolation**: use VPCs, security groups, firewall rules
-- **Docker Secrets**: Use `docker-compose.secrets.yml` for production deployments
-- **Secret rotation**: Rotate API keys every 90 days minimum
-- **Environment-based config**: Separate .env files per environment (dev/staging/prod)
-- **Never commit secrets**: Add .env, secrets/, *.key to .gitignore
-
-### 16. MCP (Model Context Protocol) Security
-- **Tool validation**: Validate all MCP tool inputs before processing
-- **Parameter sanitization**: Never trust tool arguments from clients
-- **Response transparency**: Include provider metadata (provider, model, fallback status)
-- **Error isolation**: Don't expose internal errors through MCP responses
-- **Tool permissions**: Implement RBAC for MCP tool access
-- **Audit MCP calls**: Log all tool invocations with timestamps and parameters
-- **Rate limit tools**: Prevent abuse of expensive MCP operations
-- **Dual-interface separation**: Keep operational endpoints (HTTP) separate from business logic (MCP)
-
----
-
-## Implementation Checklist
-
-When building GenAI/RAG applications, ensure:
-
-### Core Security
-- [ ] Input validation and sanitization on all user queries
-- [ ] Prompt injection prevention with AI firewall
-- [ ] PII redaction from embeddings and logs
-- [ ] API keys stored in .env or secure vault (never in code)
-- [ ] Rate limiting at multiple levels (per-user, endpoint, global)
-- [ ] Output content moderation and exfiltration prevention
-- [ ] Provider transparency in all LLM responses (provider, model, fallback)
-- [ ] Graceful degradation with fallback mechanisms
-
-### Isolation & Access Control
-- [ ] Containerized AI components with memory isolation
-- [ ] RASP (Runtime Application Self-Protection) deployed
-- [ ] Zero-trust architecture implemented
-- [ ] RBAC for AI services and document access
-- [ ] JIT (Just-in-time) access provisioning configured
-- [ ] Secure enclaves for sensitive data processing
-
-### Frameworks & Testing
-- [ ] Using secure RAG frameworks (LangChain/LlamaIndex)
-- [ ] AI-specific penetration testing in CI/CD
-- [ ] Red team exercises conducted
-- [ ] Dependency scanning and SBOM tracking
-
-### MCP Security (if using Model Context Protocol)
-- [ ] MCP tool input validation implemented
-- [ ] MCP response metadata includes provider transparency
-- [ ] MCP tool permissions and RBAC configured
-- [ ] MCP calls audited and logged
-
-### Monitoring & Governance
-- [ ] Comprehensive logging with audit trails
-- [ ] Real-time alerting for anomalies
-- [ ] Incident response plan documented and tested
-- [ ] Data lineage and model versioning implemented
-
----
-
-## Code Review Standards
-
-During code reviews for GenAI/RAG applications, verify:
-
-1. **No hardcoded secrets** (API keys, passwords, connection strings)
-2. **Proper error handling** (no sensitive data in error messages)
-3. **Input validation** present on all user-facing functions
-4. **Logging excludes PII** and sensitive information
-5. **Dependencies are up-to-date** and vulnerability-free
-6. **Tests include security scenarios** (injection, unauthorized access)
-7. **Documentation includes threat model** and security considerations
+**Key principles:**
+- Input validation and prompt injection prevention
+- PII protection in embeddings and logs
+- API key security (environment variables, never in code)
+- Output content moderation
+- Zero-trust architecture for AI components
 
 ---
 
