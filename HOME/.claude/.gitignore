@@ -1,0 +1,29 @@
+# Runtime and session data
+paste-cache/
+cache/
+backups/
+tasks/
+telemetry/
+statsig/
+debug/
+session-env/
+shell-snapshots/
+file-history/
+ide/
+
+# Auto-generated
+plans/*.md
+!plans/README.md
+history.jsonl
+stats-cache.json
+config/
+
+# Plugin runtime state
+plugins/blocklist.json
+plugins/known_marketplaces.json
+plugins/marketplaces/claude-plugins-official
+plugins/cache/
+plugins/repos/
+
+# Projects (per-project memory, large)
+projects/
