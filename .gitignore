@@ -1,1 +1,9 @@
 .DS_Store
+
+# Large binaries
+HOME/bin/eksctl
+HOME/bin/eksctl-anywhere
+HOME/bin/packer
+HOME/bin/par2
+HOME/bin/unrar
+HOME/bin/lib/
