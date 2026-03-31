@@ -56,6 +56,7 @@ source ~/.zshrc_python
 source ~/.zshrc_kubernetes
 source ~/.zshrc_aliasNcommands
 source ~/.zshrc_projects
+source ~/.zshrc-claude-instances
 
 # 2025-05-26 force zwh to automatically reread bins in $PATH since after `brew install` I don't see it until source shell again or `rehash`
 setopt hashall
@@ -63,3 +64,5 @@ setopt hashall
 # 2026-01-15 - tab completion.  This tells zsh: "if you don't know what to complete, fall back to files."
 zstyle ':completion:*' completer _complete _ignored _files
 
+# 2026-03-15 - Use ctrl-g in Claude to enter in to VIM to enable multi-lines without <return> sending the damm prompt when part way through!
+export EDITOR=vim
