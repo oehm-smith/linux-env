@@ -7,3 +7,4 @@
 .claude/debug
 .claude/ide
 .claude/history.jsonl
+.claude/image-cache/
