@@ -245,6 +245,41 @@ For complex modules, add comprehensive headers documenting:
 3. **Add short comment for clarification** when logic is non-obvious
 4. **Break down large methods** - Extract helper methods with single purposes
 
+**MANDATORY DOCSTRINGS**: Every function, method, and class MUST have a docstring. No exceptions. This applies to both new code and any code you modify — if you touch a function without a docstring, add one.
+
+**Docstring style:** Use Google-style docstrings for Python. They're readable, widely supported, and Sphinx-compatible via `sphinx.ext.napoleon`.
+
+**Required sections:**
+- One-line summary on the first line (imperative mood: "Return the...", "Calculate the...")
+- `Args:` section describing each parameter (omit `self`/`cls`)
+- `Returns:` section describing the return value (omit for `None`)
+- `Raises:` section if the function raises exceptions the caller should know about
+
+**Example:**
+```python
+def buy_shares(ticker: str, units: Decimal, price: Decimal) -> Transaction:
+    """Record a buy transaction and update the holding.
+
+    Creates a new Transaction and increases the holding's units. The
+    average cost price is recalculated as a weighted average.
+
+    Args:
+        ticker: ASX ticker symbol (e.g. "CBA.AX"). Case-insensitive.
+        units: Number of units purchased. Must be positive.
+        price: Price per unit in the holding's currency.
+
+    Returns:
+        The newly created Transaction record.
+
+    Raises:
+        ValueError: If the ticker is not a known holding.
+    """
+```
+
+**Dataclass fields:** Document non-obvious fields with inline comments or a class-level docstring listing the attributes.
+
+**Private helpers (`_foo`) still need docstrings** — one line is fine, but don't leave them blank.
+
 **Clean Code Principles:**
 - **Write smaller methods** - Each with one purpose
 - **Prefer many short methods** over one large method
@@ -260,6 +295,7 @@ For complex modules, add comprehensive headers documenting:
 - Advanced software engineer following SOLID principles
 - Apply Gang of Four (GoF) design patterns where appropriate
 - Follow major software engineering design principles
+- **Thin UI layers**: CLI, web UI, and any other interface must be thin wrappers around core business logic. If a function has branches NOT related to the UI (e.g. type conversions, date parsing, normalization, default values, orchestration), that logic belongs in core, not the UI. Otherwise it gets duplicated across every interface. Review UIs before committing — if the CLI has logic beyond "parse args, call core, format output", refactor before merging.
 
 ---
 
@@ -365,10 +401,37 @@ NEVER assume you're on the new branch - VERIFY with `git status` before making a
 
 **If in doubt about branches:** STOP and ask Brooke. Don't guess.
 
-### GitHub Issues (CRITICAL)
+### Issues (CRITICAL)
+
+**Detect the platform:** Check `git remote -v` to determine if the project is on GitHub or GitLab.
+- **GitHub**: Use `gh` CLI for issues and PRs
+- **GitLab**: Use `glab` CLI for issues and MRs
+
+**KNOWN BUG — `#` in Bash commands:** The `#` character anywhere in a Bash command argument breaks Claude Code's permission pattern matching, even when quoted or escaped. This is a known bug (GitHub issues #34379, #29582, #34007) with no fix from Anthropic. It affects ALL Bash commands, not just glab/gh. Workarounds:
+
+| Scenario | Workaround |
+|----------|------------|
+| Auto-close issues in MR/PR body | Use full URL: `Closes https://gitlab.com/.../issues/7` (both GitLab and GitHub support this) |
+| Issue refs in descriptions | Use full URL instead of `#N` |
+| Linking issues | `--linked-issues 7` — takes a number, no `#` needed |
+| Hex colors | Use color name (`blue`) or omit and set via web UI |
+| Any other `#` in arguments | Write content to a file, reference the file, or add `#` content via web UI after creation |
+
+**KNOWN BUG — `$()` command substitution in Bash commands:** The `$()` pattern (and equivalents like `$(< file)` or backticks) also trips Claude Code's permission matcher, even when the underlying command has an allow rule like `Bash(glab mr *)`. This is a separate issue from the `#` bug but often shows up in the same contexts (reading MR descriptions from files).
+
+**Workaround for MR/PR descriptions specifically:** Always pass the description as an **inline** string literal via `--description "..."`. Do not use `$(cat file)` / `$(< file)` / backticks. If the body would contain any `#` characters (markdown headers, issue refs), rewrite them first:
+
+| Instead of | Use |
+|------------|-----|
+| `## Header` | `**Header**` (bold — same visual hierarchy, no `#`) |
+| `### Subheader` | `**Subheader**` or plain caps |
+| `Closes #50` | `Closes https://<host>/<group>/<repo>/-/issues/50` |
+| `#123` / `!456` refs | Full URL to the issue/MR |
+
+Compose the entire command as one `glab mr create --title "..." --description "..."` call with the multi-line body as a quoted string (real newlines inside bash-quoted strings are fine). Zero `#`, zero `$(`.
 
 **BEFORE starting non-trivial work:**
-1. Check if a GitHub issue exists for the task
+1. Check if an issue exists for the task
 2. If no issue exists and work is non-trivial (> 30 min, multiple files, architectural), CREATE ONE
 3. If unsure whether work needs an issue, ASK Brooke
 
@@ -384,11 +447,75 @@ NEVER assume you're on the new branch - VERIFY with `git status` before making a
 - Single-line config changes
 - Documentation updates (unless major)
 
-**Issue-Branch-PR flow:**
+**Issue-Branch-PR/MR flow:**
 1. Issue created (or exists)
 2. Branch references issue: `feat/275-llm-failover`
 3. Commits reference issue: `feat: add failover (#275)`
-4. PR closes issue: `Closes #275`
+4. PR/MR closes issue: `Closes #275`
+
+### Issue Hierarchy (Milestone + Tasks)
+
+**For phased or multi-task work, use milestones to group tasks. Do NOT create a separate "epic" parent issue — the milestone IS the grouping.** An epic issue alongside a milestone is redundant and becomes an orphan that has to be closed manually at the end of the phase.
+
+1. **Milestone per phase** — create a milestone (e.g. "Phase 1", "Phase 1.1", "Phase 2"). Milestones give built-in progress tracking, start/end dates, burndown, and tie naturally to releases.
+
+2. **Task issues** — one per implementation task. Assigned to the milestone. Tasks can still link to related tasks via `--linked-issues` if helpful.
+
+3. **Labels** — keep labels for categorical tags only (`bug`, `docs`, `refactor`). Do NOT use labels as a substitute for milestones — milestones are the right tool for phase-level grouping.
+
+4. **Release tags** — when a phase completes, create an annotated git tag (e.g. `phase-1`) and a GitLab/GitHub Release with notes. Close the matching milestone at the same time.
+
+5. **Plan docs** — update plan/spec documents with issue links (e.g. `### Task 1: Scaffolding ([#7](url))`).
+
+**Creating a phase milestone (GitLab):**
+```bash
+# Milestones don't have a top-level glab subcommand — use the API
+glab api projects/<group>%2F<repo>/milestones --method POST \
+  -f title="Phase N: Feature Name" \
+  -f description="..."
+
+# Closing a milestone when the phase is done (use the milestone's real id, not iid)
+glab api projects/<group>%2F<repo>/milestones/<id> --method PUT -f state_event=close
+```
+
+**Creating a phase milestone (GitHub):**
+```bash
+gh api repos/:owner/:repo/milestones --method POST -f title="Phase N: Feature Name" -f description="..."
+gh api repos/:owner/:repo/milestones/<number> --method PATCH -f state=closed
+```
+
+**Creating task issues (assigned to the milestone):**
+```bash
+# GitLab
+glab issue create --title "Task 1: Component Name" --description "..." --milestone "Phase N: Feature Name"
+
+# GitHub
+gh issue create --title "Task 1: Component Name" --body "..." --milestone "Phase N: Feature Name"
+```
+
+Tasks that need to link to related tasks can use `--linked-issues <id>` (GitLab) or reference them in the description (GitHub).
+
+**Auto-close issues from MRs/PRs (CRITICAL syntax):**
+The auto-close keyword must appear immediately before the issue reference, with no colon and no list bullet. Use the FULL URL (not `#N`) to avoid the Claude Code `#`-in-Bash bug.
+
+Correct (each on its own line):
+```
+Closes https://gitlab.com/group/repo/-/issues/7
+Closes https://gitlab.com/group/repo/-/issues/8
+```
+
+WRONG (will not auto-close):
+```
+Closes:
+- https://gitlab.com/group/repo/-/issues/7
+- https://gitlab.com/group/repo/-/issues/8
+```
+
+**When to create task issues:**
+- At the start of implementation, create all task issues for the phase, assigned to the milestone
+- Each task issue corresponds to one task in the implementation plan
+- Close task issues as each task is completed (auto-close via `Closes <url>` in the MR works well)
+- Close the milestone when all task issues in it are closed
 
 ### General Rules
 
@@ -465,6 +592,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 - You MUST use your TodoWrite tool to keep track of what you're doing
 - You MUST NEVER discard tasks from your TodoWrite todo list without Brooke's explicit approval
+- You MUST create GitLab/GitHub issues following the Milestone + Tasks pattern (see Issues section under Version Control)
+- You MUST close task issues when completed and close the milestone when all its tasks are done
+- You MUST keep plan documents up to date with issue links
 
 ---
 
@@ -511,9 +641,37 @@ For GenAI and RAG applications, follow security best practices. For detailed che
 
 ---
 
+## Planning Documents
+
+**MANDATORY**: When the user asks for a plan (design, implementation, refactor, anything substantive), write it into the project repo under `docs/plans/YYYY-MM-DD_<descriptive-topic>.md`. Do NOT just paste the plan into chat. Plans in chat are ephemeral; in the repo they are versioned, reviewable, and referenceable from issues and MRs.
+
+**Workflow:**
+1. Write the plan to `docs/plans/YYYY-MM-DD_<topic>.md` on a new branch
+2. Commit and open an MR for review
+3. After approval, break the plan into sub-issues assigned to a milestone
+4. Link the plan file from the milestone description and from each sub-issue
+
 ## Documentation Maintenance
 
-**MANDATORY**: Keep project documentation up to date as you work.
+### Markdown trailing double spaces
+
+**Listless lists / stacked single-line paragraphs**: When consecutive short paragraphs are separated by only a single newline and intended to render as separate lines (e.g. address blocks, metadata header lines, or any "listless list"), each line except the last MUST end with two trailing spaces (`  `) for Markdown line breaks. Without them, renderers collapse them into a single paragraph.
+
+**Problem**: The Edit and Write tools strip trailing whitespace, making it impossible to add trailing double spaces directly.
+**Preferred solution**: Use `@@` as a placeholder when writing content via Write or Edit, then replace with double spaces. **IMPORTANT**: The Write tool may produce `\r` line endings, so always strip those first or the `$` anchor won't match:
+```bash
+sed -i '' $'s/\r//' file && sed -i '' 's/@@$/  /g' file
+```
+Always verify afterwards: `grep -n '@@' file` — if any remain, the replacement failed.
+**Alternative**: Add spaces after the fact with `sed`: `sed -i '' '/^PATTERN/s/$/  /' file` — match each line that needs trailing spaces and append them.
+
+**MANDATORY**: Keep project documentation up to date as you work. Documentation is NOT a final-step afterthought — update it per task, not per phase.
+
+**At the start of any new project or phase**, create these if they don't exist:
+- `docs/USER-GUIDE.md` — end-user documentation (commands, workflows, examples)
+- `docs/DEVELOPER-GUIDE.md` — developer documentation (architecture, setup, contributing, conventions)
+
+These are for humans, separate from CLAUDE.md (which is for the AI assistant).
 
 When completing features, bug fixes, or configuration changes, YOU MUST:
 
@@ -547,7 +705,108 @@ When completing features, bug fixes, or configuration changes, YOU MUST:
 
 ---
 
-**Last Updated**: 2025-12-29 (Added Documentation Maintenance section)
+## iTerm2 Tab Title
+
+When starting a Claude Code session, offer to set the iTerm2 tab title using `~/bin/iterm-set-title`:
+- Requires: iTerm2 Python API enabled (**Settings → General → Magic → Enable Python API**)
+- Usage: `iterm-set-title "Project Name - Claude Code"`
+- Locks the title so the shell can't override it
+
+---
+
+## Document Commands (Global)
+
+These commands work on any project that has markdown documents. **Never operate on documents outside the current project.**
+
+### Create PDF
+When Brooke says "create PDF for [document]":
+1. Find the markdown file in the project (use glob, don't guess)
+2. Run: `convertproj.sh -f pdf -t bespoke.docx <path-to-markdown>`
+3. Output goes to `dist/` under the project root
+
+### Email Document
+When Brooke says "email [document] to [person]" or similar:
+1. Check project memory for the document's last sent date
+2. If the markdown was modified since last sent (or never sent), regenerate the PDF first
+3. Compose in Mail.app via AppleScript — **do NOT auto-send**, open for review
+4. **Always CC brooke@oehmsmith.com**
+5. Default behaviour (if no specific message given): describe the document and highlight recent changes since last sent
+6. After Brooke confirms it was sent, record the date/time in project memory under "Documents sent log"
+
+**AppleScript template:**
+```bash
+osascript -e '
+tell application "Mail"
+    set newMsg to make new outgoing message with properties {subject:"SUBJECT", content:"BODY", visible:true}
+    tell newMsg
+        make new to recipient with properties {name:"NAME", address:"EMAIL"}
+        make new cc recipient with properties {name:"Brooke", address:"brooke@oehmsmith.com"}
+        make new attachment with properties {file name:POSIX file "PDF_PATH"}
+    end tell
+    activate
+end tell'
+```
+
+**Contacts are stored in project memory** — check there for recipient details.
+
+### Send Message
+When Brooke says "send [person] a message" or "message [person]":
+1. Compose the message based on Brooke's instructions
+2. If no specific content given, ask what to say
+3. Send via Messages.app (iMessage) using AppleScript — **sends immediately** (no review step, unlike email)
+4. Confirm to Brooke what was sent
+
+**AppleScript template:**
+```bash
+osascript -e '
+tell application "Messages"
+    send "MESSAGE" to buddy "PHONE_OR_EMAIL" of (1st account whose service type = iMessage)
+end tell'
+```
+
+**Note:** Requires macOS privacy permissions for Messages automation. Brooke's contact identifiers are stored in project memory.
+
+### Send Calendar Invite
+When Brooke says "send calendar invite" or "create a meeting" or similar:
+1. Look up attendee details in project memory
+2. Confirm event details with Brooke if not fully specified (date, time, duration, location, attendees)
+3. Create event on **Brooke Work** calendar via AppleScript — sends invite automatically
+4. Confirm to Brooke what was created and who was invited
+
+**AppleScript template:**
+```bash
+osascript -e '
+tell application "Calendar"
+    tell calendar "Brooke Work"
+        set startDate to current date
+        set year of startDate to YEAR
+        set month of startDate to MONTH
+        set day of startDate to DAY
+        set hours of startDate to START_HOUR
+        set minutes of startDate to 0
+        set seconds of startDate to 0
+        set endDate to current date
+        set year of endDate to YEAR
+        set month of endDate to MONTH
+        set day of endDate to DAY
+        set hours of endDate to END_HOUR
+        set minutes of endDate to 0
+        set seconds of endDate to 0
+        set newEvent to make new event with properties {summary:"TITLE", start date:startDate, end date:endDate, location:"LOCATION", description:"DESCRIPTION"}
+        make new attendee at end of attendees of newEvent with properties {email:"EMAIL"}
+    end tell
+end tell'
+```
+
+**Notes:**
+- Requires macOS privacy permissions for Calendar automation (System Settings → Privacy & Security → Automation)
+- Invites send automatically via the calendar account — no review step
+- For multiple attendees, repeat the `make new attendee` line
+- Contacts are stored in project memory
+
+---
+
+**Last Updated**: 2026-04-02 (Added Send Calendar Invite command)
 **Applies To**: All projects - general software engineering + GenAI/LLM/RAG/MCP applications
 **Research Contributions**: Brooke's research on isolation, sandboxing, AI firewalls, framework security, MCP best practices, and Clean Code principles
 **Communication Framework**: Adapted from obra's dotfiles with Brooke's technical security standards
