@@ -8,3 +8,5 @@
 .claude/ide
 .claude/history.jsonl
 .claude/image-cache/
+.claude/sessions/
+.claude/mcp-needs-auth-cache.json
