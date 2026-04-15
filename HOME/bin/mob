@@ -1,0 +1,4 @@
+#!/bin/bash
+# ABOUTME: Wrapper script that activates the mob-shares venv and runs mob
+# ABOUTME: Installed by scripts/install.sh — /Users/brooke/CloudStation/Dev/finance/mob-shares is replaced at install time
+exec "/Users/brooke/CloudStation/Dev/finance/mob-shares/.venv/bin/mob" "$@"
