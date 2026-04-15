@@ -31,3 +31,17 @@ findcmd() {
 }
 
 alias markdownview='glow'
+alias mdview='glow'
+
+# 2026-04-05 - during tax 
+cdalias() {
+  local target="$1"
+  if [[ "$target" != /* ]]; then
+    target="$(pwd)/$target"
+  fi
+  local resolved
+  resolved="$(osascript -e "tell application \"Finder\" to get POSIX path of (original item of alias file (POSIX file \"$target\") as text)")"
+  echo "Pushing to: $resolved"
+  pushd "$resolved"
+  dirs -v
+}
