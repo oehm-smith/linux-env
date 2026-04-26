@@ -10,10 +10,11 @@ configuration values, scans for directories that should be excluded,
 and writes a customised backup.py into the current directory.
 """
 
+import argparse
 import sys
 from pathlib import Path
 
-from brookelib.backup import DEFAULT_EXCLUDES
+from brookelib.backup import DEFAULT_EXCLUDES, list_backups
 
 # Directories that get a special mention during scanning — the user is asked
 # whether to exclude them rather than auto-excluding.
@@ -136,7 +137,7 @@ def generate_script(
         '',
         'import argparse',
         '',
-        'from brookelib.backup import run_backup',
+        'from brookelib.backup import list_backups, run_backup',
         'from brookelib.nas import is_mounted, mount, unmount',
         '',
         '# --- Configuration (edit these) ---',
@@ -171,7 +172,15 @@ def generate_script(
         '        "--no-unmount", action="store_true",',
         '        help="Leave NAS mounted after backup",',
         '    )',
+        f'    parser.add_argument(',
+        f'        "--list", nargs="?", const="{dest}", metavar="DIR",',
+        f'        help="List contents of backup directory (default: {dest})",',
+        '    )',
         '    args = parser.parse_args()',
+        '',
+        '    if args.list is not None:',
+        '        list_backups(args.list)',
+        '        return',
         '',
         '    needs_mount = not is_mounted(MOUNT_POINT)',
         '    if needs_mount:',
@@ -200,6 +209,19 @@ def generate_script(
 
 def main():
     """Run the backup-install scaffolding wizard."""
+    parser = argparse.ArgumentParser(
+        description="Generate a project-local backup.py, or list backup contents.",
+    )
+    parser.add_argument(
+        "--list", nargs="?", const="/Volumes/backup", metavar="DIR",
+        help="List contents of a backup directory (default: /Volumes/backup)",
+    )
+    args = parser.parse_args()
+
+    if args.list is not None:
+        list_backups(args.list)
+        return
+
     source = Path.cwd()
     default_name = source.name
 
