@@ -1,0 +1,111 @@
+{
+  "_description": "Global project registry. Tracks all of Brooke's active projects so they don't get lost. Updated by Claude or manually.",
+  "_updated": "2026-04-27",
+  "projects": {
+    "brookelib": {
+      "path": "~/dev/Python",
+      "description": "Shared Python library — symlink registry of reusable modules",
+      "language": "python",
+      "status": "active",
+      "brookelib_modules": ["manifest", "pandoc", "nas", "backup"]
+    },
+    "backup-tools": {
+      "path": "~/dev/Python/backup-tools",
+      "description": "Manual backup scripts — NAS mount, rsync sync, scaffolding",
+      "language": "python",
+      "status": "planned",
+      "brookelib_modules": ["nas", "backup"],
+      "notes": "To be created — code currently in brookelib directly"
+    },
+    "build-system": {
+      "path": "~/dev/documentation/2026-02-07_build-system",
+      "description": "Document build system — manifest-based markdown to PDF/DOCX",
+      "language": "python",
+      "status": "active",
+      "brookelib_modules": ["manifest", "pandoc"],
+      "cli_tools": ["build-docs", "convert-md", "convertproj"]
+    },
+    "cattle": {
+      "path": "~/dev/AI_LLM_GPT/2026-03-11_Cattle_WebSites",
+      "description": "Static website generator using LLMs",
+      "language": "typescript",
+      "status": "active",
+      "cli_tools": ["cattle"]
+    },
+    "herd-essays": {
+      "path": "~/dev/AI_LLM_GPT/2026-04-27_Herd_Essays",
+      "description": "Essay writing system using LLMs",
+      "language": "unknown",
+      "status": "active"
+    },
+    "mob-shares": {
+      "path": "~/dev/finance/mob-shares",
+      "description": "Share portfolio management CLI",
+      "language": "python",
+      "status": "active",
+      "cli_tools": ["mob"],
+      "notes": "Has own install.sh pattern — wrapper in ~/bin/mob"
+    },
+    "portfolio-graph": {
+      "path": "~/dev/finance/portfolio-graph",
+      "description": "Portfolio visualisation",
+      "language": "unknown",
+      "status": "active"
+    },
+    "diigo-tagger": {
+      "path": "~/dev/AI_LLM_GPT/2025-09-01_DiigoTagger",
+      "description": "Diigo bookmark tagging with LLMs",
+      "language": "unknown",
+      "status": "active"
+    },
+    "catalyst-essays": {
+      "path": "~/dev/AI_LLM_GPT/2025-06-02_Catalyst-EssayWritingSystem-2",
+      "description": "Catalyst essay writing system v2",
+      "language": "unknown",
+      "status": "active"
+    },
+    "catalyst-continuum": {
+      "path": "~/dev/AI_LLM_GPT/2025-07-25_Catalyst_Continuum_StoryWritingEngine",
+      "description": "Story writing engine",
+      "language": "unknown",
+      "status": "active"
+    },
+    "files-organizer": {
+      "path": "~/dev/AI_LLM_GPT/2025-05-04_Files_Organizer",
+      "description": "File organisation using LLMs",
+      "language": "unknown",
+      "status": "active"
+    },
+    "linux-env": {
+      "path": "~/CloudStation/Dev/_Application_Support/linux-env",
+      "description": "Dotfiles, shell config, ~/bin scripts",
+      "language": "shell",
+      "status": "active",
+      "notes": "Deployed to /opt/linux-env/HOME, symlinked to ~"
+    },
+    "bank-statements": {
+      "path": "~/dev/home/2025-07-15_BankCreditCardStatementAnalysis",
+      "description": "Bank/credit card statement analysis",
+      "language": "unknown",
+      "status": "active"
+    },
+    "srdd-article": {
+      "path": "~/dev/_MediumArticles/2025-12-20 Spec-Roundtrip Driven Development",
+      "description": "Medium article on SRDD methodology",
+      "language": "markdown",
+      "status": "active"
+    },
+    "amnesia-playback": {
+      "path": "~/dev/amnesia/2025-09-17_playback",
+      "description": "Media playback system",
+      "language": "unknown",
+      "status": "active"
+    },
+    "amnesia-content": {
+      "path": "~/dev/amnesia/2025-06-18_selectEncRatedContent",
+      "description": "Content selection and rating",
+      "language": "unknown",
+      "status": "active"
+    }
+  }
+}
