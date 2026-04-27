@@ -1,3 +1,0 @@
-#!/bin/bash
-export CATTLE_HOME="/Users/brooke/dev/AI_LLM_GPT/2026-03-11_Cattle_WebSites"
-node "$CATTLE_HOME/packages/cli/dist/index.js" "$@"

@@ -1,0 +1,32 @@
+#!/bin/bash
+# ABOUTME: Cattle CLI wrapper — auto-switches Node version via nvm before running
+# ABOUTME: Installed by scripts/install.sh, CATTLE_HOME and CATTLE_ENV placeholders replaced at install time
+export CATTLE_HOME="/Users/brooke/dev/AI_LLM_GPT/2026-03-11_Cattle_WebSites"
+export CATTLE_ENV="dev"
+
+# Auto-switch to the Node version pinned in .nvmrc if nvm is available
+if [ -f "$CATTLE_HOME/.nvmrc" ]; then
+  REQUIRED_MAJOR=$(cat "$CATTLE_HOME/.nvmrc" | tr -d 'v' | cut -d. -f1)
+  CURRENT_MAJOR=$(node -v 2>/dev/null | tr -d 'v' | cut -d. -f1)
+
+  if [ "$REQUIRED_MAJOR" != "$CURRENT_MAJOR" ]; then
+    # Try to load nvm and switch
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+      . "$NVM_DIR/nvm.sh" --no-use
+      nvm use "$REQUIRED_MAJOR" --silent 2>/dev/null
+    elif [ -s "$HOME/.nvm/nvm.sh" ]; then
+      . "$HOME/.nvm/nvm.sh" --no-use
+      nvm use "$REQUIRED_MAJOR" --silent 2>/dev/null
+    fi
+
+    # Verify switch worked
+    CURRENT_MAJOR=$(node -v 2>/dev/null | tr -d 'v' | cut -d. -f1)
+    if [ "$REQUIRED_MAJOR" != "$CURRENT_MAJOR" ]; then
+      echo "Error: cattle requires Node.js v${REQUIRED_MAJOR}.x but found $(node -v)."
+      echo "Install it with: nvm install $REQUIRED_MAJOR"
+      exit 1
+    fi
+  fi
+fi
+
+node "$CATTLE_HOME/packages/cli/dist/index.js" "$@"
