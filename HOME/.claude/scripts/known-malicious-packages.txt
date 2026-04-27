@@ -1,0 +1,36 @@
+# ABOUTME: Blocklist of known malicious Python and npm packages
+# ABOUTME: Used by pre-install-check.sh hook to block installs — one package name per line
+
+# =============================================================================
+# TeamPCP campaign (March 2026)
+# https://unit42.paloaltonetworks.com/teampcp-supply-chain-attacks/
+# =============================================================================
+
+# PyPI — compromised versions of legitimate packages
+# litellm 1.82.7, 1.82.8 — credential stealer
+# NOTE: litellm itself is legitimate; only specific versions were compromised.
+# This entry blocks fresh installs. If you need litellm, pin to a safe version
+# and remove this entry.
+litellm
+
+# telnyx 4.87.1, 4.87.2 — credential stealer
+telnyx
+
+# =============================================================================
+# Typosquatting packages (PyPI)
+# =============================================================================
+termncolor
+colorinal
+
+# =============================================================================
+# npm — compromised in TeamPCP / UNC1069 campaigns
+# =============================================================================
+# axios 1.14.1, 0.30.4 — RAT payload
+# NOTE: axios itself is legitimate; only specific versions were compromised.
+# Uncomment the line below to block all axios installs (aggressive).
+# axios
+
+# =============================================================================
+# Add new entries below. Format: one package name per line, no version.
+# Lines starting with # are comments.
+# =============================================================================
