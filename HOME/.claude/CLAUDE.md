@@ -33,6 +33,21 @@ You are an experienced, pragmatic software engineer. You don't over-engineer a s
 
 ---
 
+## Project Registry
+
+A global project registry lives at `~/.claude/registry/projects.json`. It tracks all of Brooke's projects with paths, descriptions, language, and status.
+
+**YOU MUST**:
+- **Check the registry** when starting work in any project — update the entry if anything is stale (wrong status, missing language, etc.)
+- **Add new projects** to the registry when creating them
+- **Update project status** when it changes:
+  - `active` → project is being worked on
+  - `planned` → project is intended but not yet started
+  - `archived` → project is no longer active
+- **Fill in missing fields** (especially `language: "unknown"`) when you can determine them from the project contents
+
+---
+
 ## Project Setup & Workflow Preferences
 
 When starting work in a NEW project (one I haven't worked on before in this session), YOU MUST ask these questions to establish preferences:
@@ -72,7 +87,13 @@ When starting work in a NEW project (one I haven't worked on before in this sess
    - **Complex project** → Suggest: Enable worktrees, offer full agent workflow
    - **Mixed/Unsure** → Default to simple, can escalate later
 
-4. **Remember the Preference**:
+4. **Update the Project Registry**:
+   - Check `~/.claude/registry/projects.json` for this project
+   - If not registered, add it with path, description, language, and `status: "active"`
+   - If registered, verify the entry is current (status, language, description)
+   - Fill in any `"unknown"` fields you can determine from the project contents
+
+5. **Remember the Preference**:
    - Record in your journal for this project
    - Check for existing `.claude-project.json` first
    - If no config exists, offer to create one with chosen settings
@@ -296,6 +317,7 @@ def buy_shares(ticker: str, units: Decimal, price: Decimal) -> Transaction:
 - Apply Gang of Four (GoF) design patterns where appropriate
 - Follow major software engineering design principles
 - **Thin UI layers**: CLI, web UI, and any other interface must be thin wrappers around core business logic. If a function has branches NOT related to the UI (e.g. type conversions, date parsing, normalization, default values, orchestration), that logic belongs in core, not the UI. Otherwise it gets duplicated across every interface. Review UIs before committing — if the CLI has logic beyond "parse args, call core, format output", refactor before merging.
+- **Classes vs functions**: ALWAYS consider whether a class is more appropriate than standalone functions. Use a class when multiple functions share state (config, connections, paths), when there's a natural lifecycle (open/close), or when the same first argument is threaded through every function. Use functions for pure transformations and one-shot operations. If 3+ functions all take the same first parameter, that's a class waiting to happen. Don't default to functions just because surrounding code uses them.
 
 ---
 
@@ -310,6 +332,7 @@ def buy_shares(ticker: str, units: Decimal, price: Decimal) -> Transaction:
 - YOU MUST MATCH the style and formatting of surrounding code, even if it differs from standard style guides. Consistency within a file trumps external standards.
 - YOU MUST NOT manually change whitespace that does not affect execution or output. Otherwise, use a formatting tool.
 - Fix broken things immediately when you find them. Don't ask permission to fix bugs.
+- **nvm is already loaded** — NEVER prefix commands with `source "$HOME/.nvm/nvm.sh"` or `nvm use`. Brooke's shell environment already has nvm loaded and the correct Node version active via `.nvmrc`. Just run `pnpm`, `node`, etc. directly. This also applies to subagent prompts.
 
 ---
 
@@ -457,7 +480,7 @@ Compose the entire command as one `glab mr create --title "..." --description ".
 
 **For phased or multi-task work, use milestones to group tasks. Do NOT create a separate "epic" parent issue — the milestone IS the grouping.** An epic issue alongside a milestone is redundant and becomes an orphan that has to be closed manually at the end of the phase.
 
-1. **Milestone per phase** — create a milestone (e.g. "Phase 1", "Phase 1.1", "Phase 2"). Milestones give built-in progress tracking, start/end dates, burndown, and tie naturally to releases.
+1. **Milestone per phase** — create a milestone (e.g. "Phase 1", "Phase 1.1", "Phase 2"). Milestones give built-in progress tracking, start/end dates, burndown, and tie naturally to releases. **Backlog/deferred phases** that aren't planned for near-term work should be labelled `Future N:` (e.g. "Future 1: Astrogon customisation") instead of using phase numbers. Phase numbers are reserved for active/upcoming work in priority order.
 
 2. **Task issues** — one per implementation task. Assigned to the milestone. Tasks can still link to related tasks via `--linked-issues` if helpful.
 
