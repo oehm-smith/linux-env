@@ -34,9 +34,11 @@
     },
     "herd-essays": {
       "path": "~/dev/AI_LLM_GPT/2026-04-27_Herd_Essays",
-      "description": "Essay writing system using LLMs",
-      "language": "unknown",
-      "status": "active"
+      "description": "Essay RAG CLI — conversational REPL over essay projects with semantic retrieval",
+      "language": "typescript",
+      "status": "active",
+      "cli_tools": ["essay-index", "essay-query", "essay-ask", "essay-chat"],
+      "notes": "pnpm monorepo: @herd/core + @herd/cli. SRDD methodology."
     },
     "mob-shares": {
       "path": "~/dev/finance/mob-shares",
