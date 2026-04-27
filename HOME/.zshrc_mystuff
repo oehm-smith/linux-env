@@ -53,6 +53,7 @@ export PATH=/opt/homebrew/opt/trash/bin/:$PATH	# Add 'trash' command in.  Otherw
 export PATH=~/.local/bin/:$PATH			# Python xv tools
 
 source ~/.zshrc_python
+source ~/.zshrc_node
 source ~/.zshrc_kubernetes
 source ~/.zshrc_aliasNcommands
 source ~/.zshrc_projects

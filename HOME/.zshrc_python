@@ -19,4 +19,5 @@ fi
 #alias python=python3
 #alias pip=pip3
 
-
+# 2026-04-27 - have my own Python library for core code - managed by Claude
+BROOKELIB_HOME=~/dev/Python
