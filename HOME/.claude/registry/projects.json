@@ -1,27 +1,28 @@
 {
   "_description": "Global project registry. Tracks all of Brooke's active projects so they don't get lost. Updated by Claude or manually.",
-  "_updated": "2026-04-27",
+  "_updated": "2026-04-29",
   "projects": {
     "brookelib": {
       "path": "~/dev/Python",
       "description": "Shared Python library — symlink registry of reusable modules",
       "language": "python",
-      "status": "active",
-      "brookelib_modules": ["manifest", "pandoc", "nas", "backup"]
+      "status": "released",
+      "brookelib_modules": ["manifest", "pandoc", "nas", "backup"],
+      "notes": "Ongoing — updated when new projects need shared modules"
     },
     "backup-tools": {
       "path": "~/dev/Python/backup-tools",
       "description": "Manual backup scripts — NAS mount, rsync sync, scaffolding",
       "language": "python",
-      "status": "planned",
+      "status": "released",
       "brookelib_modules": ["nas", "backup"],
-      "notes": "To be created — code currently in brookelib directly"
+      "notes": "In use. Sub-project within brookelib repo."
     },
     "build-system": {
       "path": "~/dev/documentation/2026-02-07_build-system",
       "description": "Document build system — manifest-based markdown to PDF/DOCX",
       "language": "python",
-      "status": "active",
+      "status": "released",
       "brookelib_modules": ["manifest", "pandoc"],
       "cli_tools": ["build-docs", "convert-md", "convertproj"]
     },
@@ -40,6 +41,14 @@
       "cli_tools": ["essay-index", "essay-query", "essay-ask", "essay-chat"],
       "notes": "pnpm monorepo: @herd/core + @herd/cli. SRDD methodology."
     },
+    "home-auto": {
+      "path": "~/dev/home/automation/2026-04-20_manage_home_tools-home_auto-ha",
+      "description": "Home automation framework — service registry, status engine, web dashboard",
+      "language": "typescript",
+      "status": "active",
+      "cli_tools": ["ha-dev"],
+      "notes": "pnpm monorepo: @home-auto/core + @home-auto/cli + @home-auto/web (Next.js). Wrapper in ~/bin/ha-dev."
+    },
     "mob-shares": {
       "path": "~/dev/finance/mob-shares",
       "description": "Share portfolio management CLI",
@@ -50,64 +59,69 @@
     },
     "portfolio-graph": {
       "path": "~/dev/finance/portfolio-graph",
-      "description": "Portfolio visualisation",
-      "language": "unknown",
-      "status": "active"
+      "description": "Portfolio visualisation — Node.js/Express + React + Socket.IO",
+      "language": "javascript",
+      "status": "archived",
+      "notes": "Last modified 2019-07-06. Predecessor to mob-shares."
     },
     "diigo-tagger": {
       "path": "~/dev/AI_LLM_GPT/2025-09-01_DiigoTagger",
-      "description": "Diigo bookmark tagging with LLMs",
-      "language": "unknown",
+      "description": "Diigo bookmark tagging with LLMs — auto-tagging, FTS5 search, HTMX web UI",
+      "language": "python",
       "status": "active"
     },
     "catalyst-essays": {
       "path": "~/dev/AI_LLM_GPT/2025-06-02_Catalyst-EssayWritingSystem-2",
-      "description": "Catalyst essay writing system v2",
-      "language": "unknown",
-      "status": "active"
+      "description": "AI essay writing platform — FastAPI backend, Astro frontend, MongoDB",
+      "language": "python",
+      "status": "paused",
+      "notes": "Mostly replaced by cattle and herd-essays"
     },
     "catalyst-continuum": {
       "path": "~/dev/AI_LLM_GPT/2025-07-25_Catalyst_Continuum_StoryWritingEngine",
-      "description": "Story writing engine",
-      "language": "unknown",
-      "status": "active"
+      "description": "AI story writing engine — entity recognition, continuity checking",
+      "language": "markdown",
+      "status": "paused",
+      "notes": "Concept/docs stage only. Mostly replaced by cattle and herd-essays."
     },
     "files-organizer": {
       "path": "~/dev/AI_LLM_GPT/2025-05-04_Files_Organizer",
-      "description": "File organisation using LLMs",
-      "language": "unknown",
-      "status": "active"
+      "description": "RAG-based file organisation using LLMs",
+      "language": "markdown",
+      "status": "rewrite",
+      "notes": "Decoupled agent architecture planned — triage agent + specialised agents per semantic file type. Fully decoupled."
     },
     "linux-env": {
       "path": "~/CloudStation/Dev/_Application_Support/linux-env",
-      "description": "Dotfiles, shell config, ~/bin scripts",
+      "description": "Dotfiles, shell config, ~/bin scripts, ~/.claude environment",
       "language": "shell",
-      "status": "active",
-      "notes": "Deployed to /opt/linux-env/HOME, symlinked to ~"
+      "status": "released",
+      "notes": "Deployed to /opt/linux-env/HOME, symlinked to ~. Ongoing maintenance."
     },
     "bank-statements": {
       "path": "~/dev/home/2025-07-15_BankCreditCardStatementAnalysis",
-      "description": "Bank/credit card statement analysis",
-      "language": "unknown",
-      "status": "active"
+      "description": "Bank/credit card statement analysis — CSV parsing, fuzzy categorisation",
+      "language": "csharp",
+      "status": "paused",
+      "notes": "Learning project for .NET/C#"
     },
     "srdd-article": {
       "path": "~/dev/_MediumArticles/2025-12-20 Spec-Roundtrip Driven Development",
       "description": "Medium article on SRDD methodology",
       "language": "markdown",
-      "status": "active"
+      "status": "released"
     },
     "amnesia-playback": {
       "path": "~/dev/amnesia/2025-09-17_playback",
-      "description": "Media playback system",
-      "language": "unknown",
-      "status": "active"
+      "description": "Media playback wrapper — ffplay-based video/image display utilities",
+      "language": "shell",
+      "status": "released"
     },
     "amnesia-content": {
       "path": "~/dev/amnesia/2025-06-18_selectEncRatedContent",
-      "description": "Content selection and rating",
-      "language": "unknown",
-      "status": "active"
+      "description": "Media file processing — rating-based selection, AES-256 encryption, manifest generation",
+      "language": "perl",
+      "status": "released"
     }
   }
 }

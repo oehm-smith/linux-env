@@ -40,11 +40,16 @@ A global project registry lives at `~/.claude/registry/projects.json`. It tracks
 **YOU MUST**:
 - **Check the registry** when starting work in any project — update the entry if anything is stale (wrong status, missing language, etc.)
 - **Add new projects** to the registry when creating them
-- **Update project status** when it changes:
-  - `active` → project is being worked on
+- **Update status and notes as you work** — when a project's status changes, a milestone is reached, or a significant decision is made, update the `status` and `notes` fields in the registry immediately. The registry is the single source of truth across all sessions.
+- **Update project status** when it changes. Valid statuses:
+  - `active` → project is being actively worked on
   - `planned` → project is intended but not yet started
-  - `archived` → project is no longer active
+  - `released` → project is functional and in use (may still receive updates)
+  - `paused` → work temporarily stopped
+  - `rewrite` → existing project planned for significant rearchitecture
+  - `archived` → project is no longer active or relevant
 - **Fill in missing fields** (especially `language: "unknown"`) when you can determine them from the project contents
+- **Generate a status report** when Brooke asks — read the registry and present a formatted table of all projects with status and notes
 
 ---
 

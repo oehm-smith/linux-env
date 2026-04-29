@@ -18,7 +18,7 @@ When Brooke mentions a project by name, check `projects.json` to find its path. 
 | path | yes | Absolute path (~ allowed) |
 | description | yes | One-line summary |
 | language | yes | Primary language |
-| status | yes | `active`, `planned`, `archived` |
+| status | yes | `active`, `planned`, `released`, `paused`, `rewrite`, `archived` |
 | brookelib_modules | no | Modules this project contributes to brookelib |
 | cli_tools | no | Commands installed to ~/bin |
 | notes | no | Anything else worth knowing |
