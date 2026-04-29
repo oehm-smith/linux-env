@@ -333,6 +333,7 @@ def buy_shares(ticker: str, units: Decimal, price: Decimal) -> Transaction:
 - YOU MUST NOT manually change whitespace that does not affect execution or output. Otherwise, use a formatting tool.
 - Fix broken things immediately when you find them. Don't ask permission to fix bugs.
 - **nvm is already loaded** — NEVER prefix commands with `source "$HOME/.nvm/nvm.sh"` or `nvm use`. Brooke's shell environment already has nvm loaded and the correct Node version active via `.nvmrc`. Just run `pnpm`, `node`, etc. directly. This also applies to subagent prompts.
+- **NO HEREDOCs** — Do NOT use HEREDOCs (`<<EOF`, `<<'EOF'`, etc.) in Bash commands unless there is genuinely no alternative. Use `-m "message"` for commit messages, inline strings for command arguments, etc. HEREDOCs cause permission-matching issues and are harder to review.
 
 ---
 
