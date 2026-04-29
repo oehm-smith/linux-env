@@ -24,6 +24,3 @@ plugins/known_marketplaces.json
 plugins/marketplaces/claude-plugins-official
 plugins/cache/
 plugins/repos/
-
-# Projects (per-project memory, large)
-projects/
