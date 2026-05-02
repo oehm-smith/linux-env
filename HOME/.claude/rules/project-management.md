@@ -9,7 +9,7 @@ Global registry at `~/.claude/registry/projects.json`. Single source of truth ac
 - Add new projects when creating them
 - Update `status` and `notes` when status changes, milestones are reached, or significant decisions are made
 - Fill in `language: "unknown"` when determinable from project contents
-- Generate a status report when Brooke asks — formatted table sorted by: `active`, `rewrite`, `released`, `paused`, `archived`
+- Generate a status report when Brooke asks — formatted table with columns: Project, Language, Status, Path, Notes. Sorted by status: `active`, `rewrite`, `released`, `paused`, `archived`. Within `active`, sort by `priority` (1 = highest)
 
 **Valid statuses:** `active` (being worked on), `planned` (not yet started), `released` (functional, in use), `paused` (temporarily stopped), `rewrite` (planned rearchitecture), `archived` (no longer relevant)
 

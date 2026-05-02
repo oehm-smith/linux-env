@@ -1,6 +1,6 @@
 {
   "_description": "Global project registry. Tracks all of Brooke's active projects so they don't get lost. Updated by Claude or manually.",
-  "_updated": "2026-04-29",
+  "_updated": "2026-05-02",
   "projects": {
     "brookelib": {
       "path": "~/dev/Python",
@@ -31,6 +31,7 @@
       "description": "Static website generator using LLMs",
       "language": "typescript",
       "status": "active",
+      "priority": 8,
       "cli_tools": ["cattle"]
     },
     "herd-essays": {
@@ -38,6 +39,7 @@
       "description": "Essay RAG CLI — conversational REPL over essay projects with semantic retrieval",
       "language": "typescript",
       "status": "active",
+      "priority": 7,
       "cli_tools": ["essay-index", "essay-query", "essay-ask", "essay-chat"],
       "notes": "pnpm monorepo: @herd/core + @herd/cli. SRDD methodology."
     },
@@ -46,6 +48,7 @@
       "description": "Home automation framework — service registry, status engine, web dashboard",
       "language": "typescript",
       "status": "active",
+      "priority": 4,
       "cli_tools": ["ha-dev"],
       "notes": "pnpm monorepo: @home-auto/core + @home-auto/cli + @home-auto/web (Next.js). Wrapper in ~/bin/ha-dev."
     },
@@ -54,6 +57,7 @@
       "description": "Share portfolio management CLI",
       "language": "python",
       "status": "active",
+      "priority": 5,
       "cli_tools": ["mob"],
       "notes": "Has own install.sh pattern — wrapper in ~/bin/mob"
     },
@@ -68,7 +72,8 @@
       "path": "~/dev/AI_LLM_GPT/2025-09-01_DiigoTagger",
       "description": "Diigo bookmark tagging with LLMs — auto-tagging, FTS5 search, HTMX web UI",
       "language": "python",
-      "status": "active"
+      "status": "active",
+      "priority": 6
     },
     "catalyst-essays": {
       "path": "~/dev/AI_LLM_GPT/2025-06-02_Catalyst-EssayWritingSystem-2",
@@ -122,6 +127,37 @@
       "description": "Media file processing — rating-based selection, AES-256 encryption, manifest generation",
       "language": "perl",
       "status": "released"
+    },
+    "tfa": {
+      "path": "~/CloudStation/Dev/work/bespoke-automation/2026-02-10_ACTGovtFunding_JoVDK",
+      "description": "HubSpot data automation for ACT government funding application schemas and records",
+      "language": "python",
+      "status": "active",
+      "priority": 1,
+      "notes": "Paid work. Client: Jo VDK."
+    },
+    "ymca-canada": {
+      "path": "~/dev/work/linke-smith/2026-04-15_YMCA_Canada",
+      "description": "Digital transformation consulting — discovery, research, proposals for YMCA Saint John's",
+      "language": "markdown",
+      "status": "active",
+      "priority": 2,
+      "notes": "Proposal for paid work. Linke-Smith Technology."
+    },
+    "bespoke": {
+      "path": "~/CloudStation/Dev/work/bespoke-automation/_bespokeAutomation/2026-01-25 Bespoke Automation",
+      "description": "Bespoke Automation business website and documentation pipeline",
+      "language": "html",
+      "status": "active",
+      "priority": 3,
+      "notes": "Brooke's automation consulting business."
+    },
+    "imap-tools": {
+      "path": "~/dev/AI_LLM_GPT/imap-tools/2025-12-19/imap-tools-dev",
+      "description": "Email triage system — LLM-powered urgency classification via IMAP, REST API, React UI",
+      "language": "typescript",
+      "status": "paused",
+      "notes": "Microservices architecture. Motivation increases with every email wrestle."
     }
   }
 }
