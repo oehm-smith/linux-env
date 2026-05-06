@@ -10,11 +10,6 @@ Fallback: `git branch -r | grep -E "origin/(main|master)$" | head -1 | sed 's@or
 
 NEVER assume `main` or `master`. If remote HEAD is misconfigured, warn Brooke.
 
-**Before any commit, verify:**
-1. NOT on the default branch
-2. On the correct feature branch
-3. If branch doesn't exist, create from default branch FIRST
-
 **Starting new work:**
 1. `git checkout <default> && git pull`
 2. Check/create issue if non-trivial
@@ -26,13 +21,10 @@ NEVER assume `main` or `master`. If remote HEAD is misconfigured, warn Brooke.
 
 ## General Rules
 
-- **NEVER commit directly to main/master** unless Brooke explicitly directs it. Always use a feature branch + PR.
 - If not in a git repo, STOP and ask permission to initialize.
 - Ask how to handle uncommitted changes when starting work. Suggest committing existing work first.
 - Create a WIP branch when starting work without a clear branch.
 - Commit frequently at logical milestones. Commit journal entries.
-- NEVER skip/evade/disable pre-commit hooks.
-- NEVER use `git add -A` without a preceding `git status`.
 - **Branch prefixes**: `feat/`, `fix/`, `refactor/`, `docs/`, `test/`, `build/`, `ci/`, `chore/`
 - Run all tests before commit.
 - PR review feedback: make separate commits (not `--amend`) to preserve review history.

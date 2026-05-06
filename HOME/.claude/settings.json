@@ -46,13 +46,6 @@
       "Bash(ls:*)"
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/statusline-philips.sh"
-  },
-  "enabledPlugins": {
-    "superpowers@superpowers-marketplace": true
-  },
   "hooks": {
     "PreToolUse": [
       {
@@ -60,71 +53,119 @@
         "hooks": [
           {
             "type": "command",
+            "command": "~/.claude/scripts/git-safety-hook.sh",
+            "if": "Bash(git commit*)",
+            "timeout": 5,
+            "statusMessage": "Checking git safety..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/git-safety-hook.sh",
+            "if": "Bash(git add*)",
+            "timeout": 5,
+            "statusMessage": "Checking git safety..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/git-safety-hook.sh",
+            "if": "Bash(git push*)",
+            "timeout": 5,
+            "statusMessage": "Checking git safety..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/git-safety-hook.sh",
+            "if": "Bash(git -C * commit*)",
+            "timeout": 5,
+            "statusMessage": "Checking git safety..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/git-safety-hook.sh",
+            "if": "Bash(git -C * add*)",
+            "timeout": 5,
+            "statusMessage": "Checking git safety..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/git-safety-hook.sh",
+            "if": "Bash(git -C * push*)",
+            "timeout": 5,
+            "statusMessage": "Checking git safety..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/no-heredoc-hook.sh",
+            "timeout": 5,
+            "statusMessage": "Checking for HEREDOCs..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(npm install*)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(npm i *)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(npm add *)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(pnpm install*)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(pnpm add *)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(pnpm i *)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(pip install *)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(pip3 install *)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/pre-install-check.sh",
             "if": "Bash(uv add *)",
-            "command": "~/.claude/scripts/pre-install-check.sh",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           },
           {
             "type": "command",
-            "if": "Bash(uv pip install *)",
             "command": "~/.claude/scripts/pre-install-check.sh",
+            "if": "Bash(uv pip install *)",
             "timeout": 10,
             "statusMessage": "Checking package against blocklist..."
           }
@@ -133,81 +174,121 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/aboutme-header-hook.sh",
+            "timeout": 5,
+            "statusMessage": "Checking ABOUTME header..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/aboutme-header-hook.sh",
+            "timeout": 5,
+            "statusMessage": "Checking ABOUTME header..."
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(npm install*)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(npm i *)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(npm add *)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(pnpm install*)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(pnpm add *)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(pnpm i *)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(pip install *)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(pip3 install *)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
+            "command": "~/.claude/scripts/post-install-audit.sh",
             "if": "Bash(uv add *)",
-            "command": "~/.claude/scripts/post-install-audit.sh",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           },
           {
             "type": "command",
-            "if": "Bash(uv pip install *)",
             "command": "~/.claude/scripts/post-install-audit.sh",
+            "if": "Bash(uv pip install *)",
             "timeout": 30,
             "statusMessage": "Running dependency audit..."
           }
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline-philips.sh"
+  },
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "productivity@knowledge-work-plugins": true,
+    "engineering@knowledge-work-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "knowledge-work-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/knowledge-work-plugins"
+      }
+    }
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium",

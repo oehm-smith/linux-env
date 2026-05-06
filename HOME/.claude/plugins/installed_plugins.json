@@ -8,8 +8,36 @@
         "version": "3.2.3",
         "installedAt": "2025-10-24T01:07:29.977Z",
         "lastUpdated": "2025-10-24T01:07:29.977Z",
-        "gitCommitSha": "19e2997334eef29d0b4ab3c40a4bc124d200d1fb",
-        "isLocal": false
+        "gitCommitSha": "19e2997334eef29d0b4ab3c40a4bc124d200d1fb"
+      }
+    ],
+    "typescript-lsp@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/brooke/.claude/plugins/cache/claude-plugins-official/typescript-lsp/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-05-02T03:06:52.959Z",
+        "lastUpdated": "2026-05-02T03:06:52.959Z"
+      }
+    ],
+    "productivity@knowledge-work-plugins": [
+      {
+        "scope": "user",
+        "installPath": "/Users/brooke/.claude/plugins/cache/knowledge-work-plugins/productivity/1.2.0",
+        "version": "1.2.0",
+        "installedAt": "2026-05-02T03:51:50.028Z",
+        "lastUpdated": "2026-05-02T03:51:50.028Z",
+        "gitCommitSha": "9789ea78ad66e395a9c709146cacecdc14ce2abf"
+      }
+    ],
+    "engineering@knowledge-work-plugins": [
+      {
+        "scope": "user",
+        "installPath": "/Users/brooke/.claude/plugins/cache/knowledge-work-plugins/engineering/1.2.0",
+        "version": "1.2.0",
+        "installedAt": "2026-05-02T04:00:33.929Z",
+        "lastUpdated": "2026-05-02T04:00:33.929Z",
+        "gitCommitSha": "9789ea78ad66e395a9c709146cacecdc14ce2abf"
       }
     ]
   }
