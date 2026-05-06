@@ -30,6 +30,39 @@ These packages are on the known-malicious blocklist.
 **Blocking**: No — PostToolUse hooks cannot block.
 **Timeout**: 30 seconds
 
+### Git Safety (PreToolUse)
+
+**Script**: `~/.claude/scripts/git-safety-hook.sh`
+**Fires on**: `git commit*`, `git add*`, `git push*` (and their `git -C` variants)
+**What it does**: Enforces git safety rules deterministically:
+- Blocks commits on `main`/`master` — must use a feature branch
+- Blocks `git add -A` / `git add .` — must add files explicitly
+- Blocks `--no-verify` flag — pre-commit hooks must not be skipped
+- Blocks force push to `main`/`master`
+
+**Blocking**: Yes — exits with code 2.
+**Timeout**: 5 seconds
+
+**Note**: The script extracts the git subcommand (before any `&&` chains) and strips `-m` message content to avoid false positives from text inside commit messages.
+
+### No HEREDOC (PreToolUse)
+
+**Script**: `~/.claude/scripts/no-heredoc-hook.sh`
+**Fires on**: All Bash commands (no `if` filter — runs on every Bash call)
+**What it does**: Blocks commands containing HEREDOC syntax (`<<EOF`, `<<'EOF'`, etc.). HEREDOCs break Claude Code's permission matching and are harder to review.
+**Blocking**: Yes — exits with code 2.
+**Timeout**: 5 seconds
+
+### ABOUTME Header Check (PostToolUse)
+
+**Script**: `~/.claude/scripts/aboutme-header-hook.sh`
+**Fires on**: Write and Edit tool calls
+**What it does**: After writing/editing a code file (`.ts`, `.py`, `.sh`, `.go`, etc.), checks if the file has an `ABOUTME:` comment in the first 5 lines. Warns if missing. Skips non-code files (`.md`, `.json`, `.yaml`, etc.).
+**Blocking**: No — PostToolUse hooks cannot block, just warns.
+**Timeout**: 5 seconds
+
+---
+
 ## Pre-Commit Hook (Manual Setup)
 
 **Script**: `~/.claude/scripts/pre-commit-audit.sh`
@@ -118,4 +151,4 @@ Available events: `PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `SessionStart
 
 ---
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-07

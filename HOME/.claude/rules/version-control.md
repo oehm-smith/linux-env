@@ -21,6 +21,14 @@ NEVER assume `main` or `master`. If remote HEAD is misconfigured, warn Brooke.
 
 ## General Rules
 
+**Hook-enforced** (you will be blocked — don't attempt these):
+- Commit on main/master → blocked. Always use a feature branch + PR.
+- `git add -A` / `git add .` → blocked. Use explicit file names.
+- `--no-verify` on commit → blocked. Pre-commit hooks must run.
+- Force push to main/master → blocked.
+- HEREDOCs in Bash → blocked. Use `-m` flags, inline strings.
+
+**Rules** (not hook-enforced, follow these):
 - If not in a git repo, STOP and ask permission to initialize.
 - Ask how to handle uncommitted changes when starting work. Suggest committing existing work first.
 - Create a WIP branch when starting work without a clear branch.
