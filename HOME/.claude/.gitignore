@@ -21,6 +21,7 @@ config/
 # Plugin runtime state
 plugins/blocklist.json
 plugins/known_marketplaces.json
-plugins/marketplaces/claude-plugins-official
+plugins/marketplaces/
+plugins/install-counts-cache.json
 plugins/cache/
 plugins/repos/

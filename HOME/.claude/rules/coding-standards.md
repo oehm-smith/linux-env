@@ -11,7 +11,6 @@
 - Do not manually change whitespace that doesn't affect execution. Use a formatting tool.
 - Fix bugs immediately when found. Don't ask permission.
 - **nvm is already loaded** — NEVER prefix commands with `source "$HOME/.nvm/nvm.sh"` or `nvm use`. Just run `pnpm`, `node`, etc. directly. This applies to subagent prompts too.
-- **NO HEREDOCs** — Do NOT use HEREDOCs (`<<EOF`, `<<'EOF'`, etc.) in Bash commands unless genuinely no alternative. Use `-m "message"` for commits, inline strings for arguments.
 
 ## Design Principles
 
@@ -42,12 +41,7 @@ Domain-driven examples: `Tool` not `AbstractToolInterface`, `Registry` not `Tool
 
 ## File Headers
 
-**MANDATORY**: All code files start with a 2-line `ABOUTME:` comment (greppable).
-
-```
-// ABOUTME: User authentication service handling JWT tokens and session management
-// ABOUTME: Used by auth controllers, depends on user repository and auth config
-```
+All code files should start with a 2-line `ABOUTME:` comment (greppable). Enforced by PostToolUse hook — you'll be warned if missing.
 
 For complex modules, expand with PURPOSE, ARCHITECTURE CONTEXT, WHY THIS APPROACH, RELATED FILES sections.
 
