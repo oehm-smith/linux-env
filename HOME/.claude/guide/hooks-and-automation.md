@@ -33,14 +33,14 @@ These packages are on the known-malicious blocklist.
 ### Git Safety (PreToolUse)
 
 **Script**: `~/.claude/scripts/git-safety-hook.sh`
-**Fires on**: `git commit*`, `git add*`, `git push*` (and their `git -C` variants)
-**What it does**: Enforces git safety rules deterministically:
+**Fires on**: All Bash commands (no `if` filter — must fire on everything because git commands are often chained with `cd && git commit`, which wouldn't match a `Bash(git commit*)` pattern)
+**What it does**: Checks if the command contains git commit/add/push, and if so enforces safety rules:
 - Blocks commits on `main`/`master` — must use a feature branch
 - Blocks `git add -A` / `git add .` — must add files explicitly
 - Blocks `--no-verify` flag — pre-commit hooks must not be skipped
 - Blocks force push to `main`/`master`
 
-**Blocking**: Yes — exits with code 2.
+**Blocking**: Yes — exits with code 2. Exits immediately with 0 for non-git commands.
 **Timeout**: 5 seconds
 
 **Note**: The script extracts the git subcommand (before any `&&` chains) and strips `-m` message content to avoid false positives from text inside commit messages.
