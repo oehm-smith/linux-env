@@ -54,42 +54,6 @@
           {
             "type": "command",
             "command": "~/.claude/scripts/git-safety-hook.sh",
-            "if": "Bash(git commit*)",
-            "timeout": 5,
-            "statusMessage": "Checking git safety..."
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/git-safety-hook.sh",
-            "if": "Bash(git add*)",
-            "timeout": 5,
-            "statusMessage": "Checking git safety..."
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/git-safety-hook.sh",
-            "if": "Bash(git push*)",
-            "timeout": 5,
-            "statusMessage": "Checking git safety..."
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/git-safety-hook.sh",
-            "if": "Bash(git -C * commit*)",
-            "timeout": 5,
-            "statusMessage": "Checking git safety..."
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/git-safety-hook.sh",
-            "if": "Bash(git -C * add*)",
-            "timeout": 5,
-            "statusMessage": "Checking git safety..."
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/git-safety-hook.sh",
-            "if": "Bash(git -C * push*)",
             "timeout": 5,
             "statusMessage": "Checking git safety..."
           },
@@ -98,6 +62,12 @@
             "command": "~/.claude/scripts/no-heredoc-hook.sh",
             "timeout": 5,
             "statusMessage": "Checking for HEREDOCs..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/mr-closes-hook.py",
+            "timeout": 5,
+            "statusMessage": "Checking MR/PR Closes reference..."
           },
           {
             "type": "command",
