@@ -76,12 +76,21 @@ Start/end accept: `today`, `tomorrow`, `+3d`, `next monday`, `YYYY-MM-DD`, any o
 
 Adding `--attendees` sends invitations automatically.
 
-### `cal list` — upcoming events
+### `cal list` — upcoming events + query
 ```
-cal list                        # today + next 7 days, all calendars
-cal list --days 14              # extend the window
+cal list                                        # today + next 7 days
+cal list --days 14
+cal list --from "2026-06-01" --to "2026-06-15"  # explicit range
 cal list --calendar "Brooke Work"
+cal list --name "standup"                       # title regex
+cal list --location "zoom"                      # location regex
+cal list --notes "Q3 plan"                      # description regex
+cal list --attendees "alice@"                   # attendee regex
+cal list --no-all-day                           # hide birthdays/holidays
+cal list --all-day-only
 ```
+
+Text filters are regex, case-insensitive by default. Add `--case-sensitive` or use an inline `(?-i:...)` group for case-sensitive matching. Filters compose freely.
 
 ## Reminders (`~/bin/remind`)
 
@@ -92,16 +101,23 @@ Prerequisite: `brew install keith/formulae/reminders-cli`.
 **CRITICAL behavioural rule — never auto-complete reminders.**
 Only call `remind done <id>` when Brooke explicitly tells you a reminder is done, by name or short id. Inferring completion from context (e.g. "we shipped that PR" → ticking off a related reminder) is FORBIDDEN. Brooke's biggest problem is reminders silently disappearing on him; an over-eager tick erases his trust in the tool. When unsure, ASK.
 
-### `remind list` — triage view (default command for "what reminders do I have?")
+### `remind list` — triage view + query
 ```
-remind list                     # HIGH PRIORITY → DUE TODAY → OVERDUE (newest first)
-remind list --list "Work"       # filter to one list
-remind list --show nodue        # also include items with no due date
-remind list --show all          # everything, including snoozed/upcoming
-remind list --all               # alias for --show all
+remind list                              # HIGH PRIORITY → DUE TODAY → OVERDUE (newest first)
+remind list --list "Work"                # filter to one list
+remind list --show nodue                 # also include items with no due date
+remind list --show all                   # everything, including snoozed/upcoming
+remind list --all                        # alias for --show all
+remind list --name "ring|call|email"     # title regex
+remind list --notes "ABC"                # notes regex
+remind list --priority high              # one of high/medium/low/none
+remind list --due-from "2026-04-01" --due-to "2026-05-01"
+remind list --no-due                     # items without a due date only
 ```
 
 Default view hides snoozed/upcoming and items without due dates; counts appear in a footer with the hint to use `--show`.
+
+Any query filter (`--name`, `--notes`, `--priority`, `--due-from`, `--due-to`, `--no-due`) implicitly flips visibility to `--show all` so filtered matches aren't hidden. Text filters are regex, case-insensitive by default (`--case-sensitive` or inline `(?-i:...)` to override). Reminders themselves have no tags — Apple doesn't expose them through any scriptable API — so `--list` and `--name` are the categorization axes.
 
 ### `remind add` — create a reminder
 ```

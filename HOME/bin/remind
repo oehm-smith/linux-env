@@ -47,9 +47,23 @@ def fetch_all():
                 "priority": int(r.get("priority", 0) or 0),
                 "due": due,
                 "name": r.get("title", ""),
+                "notes": r.get("notes", "") or "",
             }
         )
     return items
+
+
+def parse_range_bound(s, end):
+    """Parse a date for --due-from/--due-to. With no explicit time, snap to day boundary."""
+    s = s.strip().lower()
+    has_time = bool(re.search(r"\s+\d{1,2}:\d{2}$", s))
+    d = parse_when(s)
+    if not has_time:
+        if end:
+            d = d.replace(hour=23, minute=59, second=59)
+        else:
+            d = d.replace(hour=0, minute=0, second=0)
+    return d
 
 
 def short_id(uuid):
@@ -176,11 +190,48 @@ def fmt_item(it, today):
 def cmd_list(args):
     if args.all:
         args.show = "all"
+
+    has_query = any(
+        [args.name, args.notes, args.priority, args.due_from, args.due_to, args.no_due]
+    )
+    if has_query and not args.show:
+        args.show = "all"
+
+    if args.no_due and (args.due_from or args.due_to):
+        sys.exit("--no-due is incompatible with --due-from / --due-to")
+
     items = fetch_all()
     if args.list:
         items = [it for it in items if it["list"].lower() == args.list.lower()]
         if not items:
             sys.exit(f"no list named {args.list!r} or no incomplete reminders in it")
+
+    re_flags = 0 if args.case_sensitive else re.IGNORECASE
+    if args.name:
+        try:
+            pat = re.compile(args.name, re_flags)
+        except re.error as e:
+            sys.exit(f"bad --name regex: {e}")
+        items = [it for it in items if pat.search(it["name"])]
+    if args.notes:
+        try:
+            pat = re.compile(args.notes, re_flags)
+        except re.error as e:
+            sys.exit(f"bad --notes regex: {e}")
+        items = [it for it in items if it["notes"] and pat.search(it["notes"])]
+    if args.priority:
+        if args.priority == "none":
+            items = [it for it in items if it["priority"] == 0]
+        else:
+            target = PRIORITY_LABEL_TO_INT[args.priority]
+            items = [it for it in items if it["priority"] == target]
+    if args.no_due:
+        items = [it for it in items if it["due"] is None]
+    elif args.due_from or args.due_to:
+        lo = parse_range_bound(args.due_from, end=False) if args.due_from else dt.datetime.min
+        hi = parse_range_bound(args.due_to, end=True) if args.due_to else dt.datetime.max
+        items = [it for it in items if it["due"] and lo <= it["due"] <= hi]
+
     buckets = triage(items)
 
     show_nodue = args.show in ("nodue", "all")
@@ -309,7 +360,15 @@ def main():
     pa.add_argument("--notes", help="notes/body text")
     pa.set_defaults(func=cmd_add)
 
-    pl = sub.add_parser("list", help="triage view of incomplete reminders")
+    pl = sub.add_parser(
+        "list",
+        help="triage view + query filters",
+        description=(
+            "Triage view by default (HIGH → DUE TODAY → OVERDUE). Any query filter "
+            "(--name/--notes/--priority/--due-from/--due-to/--no-due) flips visibility "
+            "to --show all so filtered results aren't hidden."
+        ),
+    )
     pl.add_argument("--list", help="filter to one list by name (case-insensitive)")
     pl.add_argument(
         "--show",
@@ -317,6 +376,33 @@ def main():
         help="nodue: also show items with no due date; all: include snoozed too",
     )
     pl.add_argument("--all", action="store_true", help="alias for --show all")
+    pl.add_argument(
+        "--name", help="regex against title (case-insensitive by default)"
+    )
+    pl.add_argument(
+        "--notes", help="regex against notes (case-insensitive by default)"
+    )
+    pl.add_argument(
+        "--priority",
+        choices=["high", "medium", "low", "none"],
+        help="filter to exactly this priority",
+    )
+    pl.add_argument(
+        "--due-from",
+        help="show items with due date on or after this date (00:00 if no time)",
+    )
+    pl.add_argument(
+        "--due-to",
+        help="show items with due date on or before this date (23:59 if no time)",
+    )
+    pl.add_argument(
+        "--no-due", action="store_true", help="show only items with no due date"
+    )
+    pl.add_argument(
+        "--case-sensitive",
+        action="store_true",
+        help="treat --name / --notes regex as case-sensitive",
+    )
     pl.set_defaults(func=cmd_list)
 
     ps = sub.add_parser("snooze", help="push a reminder's due date forward")
