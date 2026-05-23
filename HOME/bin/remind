@@ -1,0 +1,341 @@
+#!/usr/bin/env python3
+# ABOUTME: Triage CLI for Apple Reminders — add, list, snooze, done (explicit only).
+# ABOUTME: Reads via reminders-cli (fast); writes via reminders-cli + osascript.
+
+import argparse
+import datetime as dt
+import json
+import re
+import subprocess
+import sys
+
+
+PRIORITY_LABEL_TO_INT = {"high": 1, "medium": 5, "low": 9}
+
+
+def run(cmd, **kw):
+    """Run a subprocess, return its CompletedProcess; raise SystemExit on failure."""
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, **kw)
+    except FileNotFoundError:
+        sys.exit(f"missing tool: {cmd[0]} — install with `brew install keith/formulae/reminders-cli`")
+
+
+def fetch_all():
+    """Pull every incomplete reminder as a normalized list of dicts.
+
+    Local timezone applied to dueDate. Returns sorted list (insertion order from cli).
+    """
+    p = run(["reminders", "show-all", "--format=json"])
+    if p.returncode != 0:
+        sys.exit(f"reminders show-all failed: {p.stderr.strip()}")
+    raw = json.loads(p.stdout)
+    items = []
+    for r in raw:
+        due = None
+        if "dueDate" in r and r["dueDate"]:
+            try:
+                # Format observed: "2028-02-10T06:00:00Z" (UTC)
+                u = dt.datetime.strptime(r["dueDate"], "%Y-%m-%dT%H:%M:%SZ")
+                due = u.replace(tzinfo=dt.timezone.utc).astimezone().replace(tzinfo=None)
+            except ValueError:
+                pass
+        items.append(
+            {
+                "id": r["externalId"],
+                "list": r["list"],
+                "priority": int(r.get("priority", 0) or 0),
+                "due": due,
+                "name": r.get("title", ""),
+            }
+        )
+    return items
+
+
+def short_id(uuid):
+    """First 8 hex chars of a reminder externalId."""
+    return uuid.split("-", 1)[0].lower()
+
+
+def resolve(partial, items=None):
+    """Find a reminder by full id, x-apple-reminder URL, or 4+ char hex prefix."""
+    if partial.startswith("x-apple-reminder://"):
+        partial = partial.split("//", 1)[1]
+    if items is None:
+        items = fetch_all()
+    if len(partial) < 4:
+        sys.exit(f"id prefix too short: {partial!r} (need >= 4 hex chars)")
+    matches = [it for it in items if it["id"].lower().startswith(partial.lower())]
+    if not matches:
+        sys.exit(f"no incomplete reminder matches prefix {partial!r}")
+    if len(matches) > 1:
+        msg = f"ambiguous prefix {partial!r} ({len(matches)} matches):\n"
+        for m in matches[:6]:
+            msg += f"  {short_id(m['id'])}  [{m['list']}] {m['name']}\n"
+        sys.exit(msg)
+    return matches[0]
+
+
+def parse_when(s):
+    """Parse a flexible date/datetime spec into a naive local datetime.
+
+    Accepts: today, tomorrow, +Nd, +Nw, +Nh, next mon..sun, YYYY-MM-DD,
+    any of the above with an optional trailing " HH:MM".
+    """
+    s = s.strip().lower()
+    tm = re.search(r"\s+(\d{1,2}):(\d{2})$", s)
+    if tm:
+        hour = int(tm.group(1))
+        minute = int(tm.group(2))
+        base = s[: tm.start()].strip()
+    else:
+        hour, minute = 9, 0
+        base = s
+
+    now = dt.datetime.now().replace(second=0, microsecond=0)
+    today = now.replace(hour=hour, minute=minute)
+
+    if base == "today":
+        return today
+    if base == "tomorrow":
+        return today + dt.timedelta(days=1)
+    m = re.match(r"^\+(\d+)([dwh])$", base)
+    if m:
+        n = int(m.group(1))
+        u = m.group(2)
+        if u == "d":
+            return today + dt.timedelta(days=n)
+        if u == "w":
+            return today + dt.timedelta(weeks=n)
+        if u == "h":
+            return now + dt.timedelta(hours=n)
+    m = re.match(r"^next (mon|tue|wed|thu|fri|sat|sun)(?:day)?$", base)
+    if m:
+        weekday = dict(mon=0, tue=1, wed=2, thu=3, fri=4, sat=5, sun=6)[m.group(1)]
+        delta = (weekday - today.weekday()) % 7
+        if delta == 0:
+            delta = 7
+        return today + dt.timedelta(days=delta)
+    try:
+        d = dt.datetime.strptime(base, "%Y-%m-%d")
+        return d.replace(hour=hour, minute=minute)
+    except ValueError:
+        pass
+    sys.exit(f"unrecognized date: {s!r}")
+
+
+def triage(items):
+    today_start = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + dt.timedelta(days=1)
+    buckets = {"high": [], "today": [], "overdue": [], "future": [], "nodue": []}
+    for it in items:
+        if it["priority"] == 1:
+            buckets["high"].append(it)
+        elif it["due"] is None:
+            buckets["nodue"].append(it)
+        elif today_start <= it["due"] < today_end:
+            buckets["today"].append(it)
+        elif it["due"] < today_start:
+            buckets["overdue"].append(it)
+        else:
+            buckets["future"].append(it)
+    buckets["high"].sort(key=lambda x: (x["due"] or dt.datetime.max))
+    buckets["today"].sort(key=lambda x: x["due"])
+    buckets["overdue"].sort(key=lambda x: x["due"], reverse=True)
+    buckets["future"].sort(key=lambda x: x["due"])
+    buckets["nodue"].sort(key=lambda x: (x["list"].lower(), x["name"].lower()))
+    return buckets
+
+
+def fmt_item(it, today):
+    sid = short_id(it["id"])
+    list_tag = f"[{it['list']}]"
+    pri_tag = ""
+    if it["priority"] == 1:
+        pri_tag = " *HIGH*"
+    elif it["priority"] == 5:
+        pri_tag = " (med)"
+    elif it["priority"] == 9:
+        pri_tag = " (low)"
+    due_str = ""
+    if it["due"]:
+        delta = (it["due"].date() - today.date()).days
+        if delta == 0:
+            due_str = f"  due today {it['due'].strftime('%H:%M')}"
+        elif delta < 0:
+            n = -delta
+            due_str = (
+                f"  due {it['due'].strftime('%Y-%m-%d')} "
+                f"({n} day{'s' if n != 1 else ''} ago)"
+            )
+        else:
+            due_str = f"  due {it['due'].strftime('%Y-%m-%d %H:%M')}"
+    return f"  {sid}  {list_tag:<22} {it['name']}{pri_tag}{due_str}"
+
+
+def cmd_list(args):
+    if args.all:
+        args.show = "all"
+    items = fetch_all()
+    if args.list:
+        items = [it for it in items if it["list"].lower() == args.list.lower()]
+        if not items:
+            sys.exit(f"no list named {args.list!r} or no incomplete reminders in it")
+    buckets = triage(items)
+
+    show_nodue = args.show in ("nodue", "all")
+    show_future = args.show == "all"
+    today = dt.datetime.now()
+
+    sections = []
+    if buckets["high"]:
+        sections.append(("HIGH PRIORITY", buckets["high"]))
+    if buckets["today"]:
+        sections.append(("DUE TODAY", buckets["today"]))
+    if buckets["overdue"]:
+        sections.append(("OVERDUE", buckets["overdue"]))
+    if show_future and buckets["future"]:
+        sections.append(("UPCOMING / SNOOZED", buckets["future"]))
+    if show_nodue and buckets["nodue"]:
+        sections.append(("NO DUE DATE", buckets["nodue"]))
+
+    if not sections:
+        print("nothing actionable.")
+    else:
+        for i, (title, group) in enumerate(sections):
+            if i > 0:
+                print()
+            print(title)
+            for it in group:
+                print(fmt_item(it, today))
+
+    notes = []
+    if not show_future and buckets["future"]:
+        nxt = buckets["future"][0]["due"].strftime("%Y-%m-%d")
+        notes.append(f"{len(buckets['future'])} snoozed/upcoming (next: {nxt})")
+    if not show_nodue and buckets["nodue"]:
+        notes.append(f"{len(buckets['nodue'])} without due date")
+    if notes:
+        print()
+        print(" · ".join(notes) + "  — use --show nodue or --show all")
+
+
+def cmd_add(args):
+    cmd = ["reminders", "add", args.list, args.text]
+    if args.priority:
+        cmd.extend(["-p", args.priority])
+    if args.notes:
+        cmd.extend(["-n", args.notes])
+    if args.due:
+        d = parse_when(args.due)
+        cmd.extend(["-d", d.strftime("%Y-%m-%d %H:%M")])
+    p = run(cmd)
+    if p.returncode != 0:
+        sys.exit(f"add failed: {p.stderr.strip()}")
+    print(p.stdout.strip() or f"added: {args.text}")
+
+
+def cmd_done(args):
+    it = resolve(args.id)
+    p = run(["reminders", "complete", it["list"], it["id"]])
+    if p.returncode != 0:
+        sys.exit(f"complete failed: {p.stderr.strip()}")
+    print(f"completed {short_id(it['id'])}: {it['name']}  [{it['list']}]")
+
+
+_PRIORITY_INT_TO_LABEL = {1: "high", 5: "medium", 9: "low"}
+
+
+def cmd_snooze(args):
+    """Snooze = move due date forward.
+
+    Reminders.app AppleScript writes to existing reminders hang at scale and
+    reminders-cli has no due-date edit. Workaround: add a new reminder with the
+    updated due date, then delete the original. The reminder's UUID changes.
+    """
+    when = parse_when(args.when)
+    it = resolve(args.id)
+
+    # Fetch the full original record so we can recreate it faithfully.
+    p = run(["reminders", "show", it["list"], "--format=json"])
+    if p.returncode != 0:
+        sys.exit(f"snooze: could not read list {it['list']!r}: {p.stderr.strip()}")
+    original = next(
+        (r for r in json.loads(p.stdout) if r["externalId"] == it["id"]), None
+    )
+    if original is None:
+        sys.exit(f"snooze: reminder {short_id(it['id'])} no longer exists")
+
+    add_cmd = ["reminders", "add", it["list"], original["title"]]
+    pri = original.get("priority", 0)
+    if pri in _PRIORITY_INT_TO_LABEL:
+        add_cmd.extend(["-p", _PRIORITY_INT_TO_LABEL[pri]])
+    if original.get("notes"):
+        add_cmd.extend(["-n", original["notes"]])
+    add_cmd.extend(["-d", when.strftime("%Y-%m-%d %H:%M")])
+
+    add_p = run(add_cmd)
+    if add_p.returncode != 0:
+        sys.exit(f"snooze: re-add failed (original kept): {add_p.stderr.strip()}")
+
+    # Only delete the original AFTER the new one is in place.
+    del_p = run(["reminders", "delete", it["list"], it["id"]])
+    if del_p.returncode != 0:
+        print(
+            f"WARNING: re-add succeeded but delete of original {short_id(it['id'])} "
+            f"failed — you have two copies now. {del_p.stderr.strip()}",
+            file=sys.stderr,
+        )
+    print(
+        f"snoozed {short_id(it['id'])} → new copy, "
+        f"due {when.strftime('%Y-%m-%d %H:%M')}: {original['title']}"
+    )
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        prog="remind", description="Triage CLI for Apple Reminders."
+    )
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    pa = sub.add_parser("add", help="add a reminder")
+    pa.add_argument("text", help="reminder text")
+    pa.add_argument("--list", default="Reminders", help="list (default: Reminders)")
+    pa.add_argument(
+        "--due",
+        help='today | tomorrow | +Nd|+Nw|+Nh | next mon..sun | YYYY-MM-DD [HH:MM]',
+    )
+    pa.add_argument("--priority", choices=["high", "medium", "low"])
+    pa.add_argument("--notes", help="notes/body text")
+    pa.set_defaults(func=cmd_add)
+
+    pl = sub.add_parser("list", help="triage view of incomplete reminders")
+    pl.add_argument("--list", help="filter to one list by name (case-insensitive)")
+    pl.add_argument(
+        "--show",
+        choices=["nodue", "all"],
+        help="nodue: also show items with no due date; all: include snoozed too",
+    )
+    pl.add_argument("--all", action="store_true", help="alias for --show all")
+    pl.set_defaults(func=cmd_list)
+
+    ps = sub.add_parser("snooze", help="push a reminder's due date forward")
+    ps.add_argument("id", help="reminder id or 4+ char hex prefix")
+    ps.add_argument(
+        "when",
+        help='today | tomorrow | +Nd|+Nw|+Nh | next mon..sun | YYYY-MM-DD [HH:MM]',
+    )
+    ps.set_defaults(func=cmd_snooze)
+
+    pd = sub.add_parser(
+        "done", help="mark a reminder completed (explicit user action only)"
+    )
+    pd.add_argument("id", help="reminder id or 4+ char hex prefix")
+    pd.set_defaults(func=cmd_done)
+
+    args = ap.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+# ABOUTME: CLI for Apple Calendar — list via icalBuddy (handles recurring), add via osascript.
+# ABOUTME: Stdlib only.
+
+import argparse
+import datetime as dt
+import re
+import subprocess
+import sys
+
+
+DEFAULT_CALENDAR = "Brooke Work"
+DEFAULT_DAYS = 7
+
+
+def esc(s):
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def set_date_block(var, d):
+    return (
+        f"set {var} to current date\n"
+        f"set year of {var} to {d.year}\n"
+        f"set month of {var} to {d.month}\n"
+        f"set day of {var} to {d.day}\n"
+        f"set hours of {var} to {d.hour}\n"
+        f"set minutes of {var} to {d.minute}\n"
+        f"set seconds of {var} to 0\n"
+    )
+
+
+def parse_when(s):
+    s = s.strip().lower()
+    tm = re.search(r"\s+(\d{1,2}):(\d{2})$", s)
+    if tm:
+        hour = int(tm.group(1))
+        minute = int(tm.group(2))
+        base = s[: tm.start()].strip()
+    else:
+        hour, minute = 9, 0
+        base = s
+
+    now = dt.datetime.now().replace(second=0, microsecond=0)
+    today = now.replace(hour=hour, minute=minute)
+
+    if base == "today":
+        return today
+    if base == "tomorrow":
+        return today + dt.timedelta(days=1)
+    m = re.match(r"^\+(\d+)([dwh])$", base)
+    if m:
+        n = int(m.group(1))
+        u = m.group(2)
+        if u == "d":
+            return today + dt.timedelta(days=n)
+        if u == "w":
+            return today + dt.timedelta(weeks=n)
+        if u == "h":
+            return now + dt.timedelta(hours=n)
+    m = re.match(r"^next (mon|tue|wed|thu|fri|sat|sun)(?:day)?$", base)
+    if m:
+        weekday = dict(mon=0, tue=1, wed=2, thu=3, fri=4, sat=5, sun=6)[m.group(1)]
+        delta = (weekday - today.weekday()) % 7
+        if delta == 0:
+            delta = 7
+        return today + dt.timedelta(days=delta)
+    try:
+        d = dt.datetime.strptime(base, "%Y-%m-%d")
+        return d.replace(hour=hour, minute=minute)
+    except ValueError:
+        pass
+    sys.exit(f"unrecognized date: {s!r}")
+
+
+def cmd_list(args):
+    cmd = [
+        "icalBuddy",
+        "-sd",          # separate by date
+        "-nrd",         # no relative dates like "tomorrow"
+        "-tf", "%H:%M",
+        "-df", "%a %d %b",
+        "-npn",         # no property names ("location:" prefix etc.)
+        "-eep", "url,attendees,notes",  # hide noise
+    ]
+    if args.calendar:
+        cmd.extend(["-ic", args.calendar])
+    cmd.append(f"eventsToday+{args.days}")
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        sys.exit("missing tool: icalBuddy — install with `brew install ical-buddy`")
+    sys.stdout.write(p.stdout)
+    if p.stderr:
+        sys.stderr.write(p.stderr)
+    sys.exit(p.returncode)
+
+
+def cmd_add(args):
+    start = parse_when(args.start)
+    if args.duration:
+        end = start + dt.timedelta(minutes=args.duration)
+    elif args.end:
+        end = parse_when(args.end)
+    else:
+        end = start + dt.timedelta(hours=1)
+
+    if end <= start:
+        sys.exit("end must be after start")
+
+    start_block = set_date_block("startD", start)
+    end_block = set_date_block("endD", end)
+
+    props = [f'summary:"{esc(args.title)}"', "start date:startD", "end date:endD"]
+    if args.location:
+        props.append(f'location:"{esc(args.location)}"')
+    if args.description:
+        props.append(f'description:"{esc(args.description)}"')
+    if args.all_day:
+        props.append("allday event:true")
+    props_str = "{" + ", ".join(props) + "}"
+
+    attendee_lines = []
+    if args.attendees:
+        for email in args.attendees.split(","):
+            email = email.strip()
+            if email:
+                attendee_lines.append(
+                    f'        make new attendee at end of attendees of newEvent '
+                    f'with properties {{email:"{esc(email)}"}}'
+                )
+    attendee_block = "\n".join(attendee_lines)
+
+    script = f"""
+tell application "Calendar"
+    tell calendar "{esc(args.calendar)}"
+        {start_block}{end_block}
+        set newEvent to make new event with properties {props_str}
+{attendee_block}
+        return uid of newEvent
+    end tell
+end tell
+"""
+    p = subprocess.run(
+        ["osascript", "-"],
+        input=script,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if p.returncode != 0:
+        sys.exit(f"create failed: {p.stderr.strip()}")
+    uid = p.stdout.strip()
+    if args.all_day:
+        when_str = start.strftime("%Y-%m-%d (all-day)")
+    else:
+        when_str = f"{start.strftime('%Y-%m-%d %H:%M')} – {end.strftime('%H:%M')}"
+    print(f"created event {uid}")
+    print(f"  {when_str}  · {args.title}  · [{args.calendar}]")
+    if attendee_lines:
+        print(f"  invites sent to: {args.attendees}")
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="cal", description="Apple Calendar CLI.")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    pa = sub.add_parser("add", help="create an event")
+    pa.add_argument("title", help="event title")
+    pa.add_argument(
+        "--start",
+        required=True,
+        help='today | tomorrow | +Nd | next mon..sun | YYYY-MM-DD [HH:MM]',
+    )
+    pa.add_argument("--end", help="end: same formats as --start")
+    pa.add_argument("--duration", type=int, help="minutes (alternative to --end; default 60)")
+    pa.add_argument(
+        "--calendar",
+        default=DEFAULT_CALENDAR,
+        help=f"calendar name (default: {DEFAULT_CALENDAR})",
+    )
+    pa.add_argument("--location")
+    pa.add_argument("--description")
+    pa.add_argument("--attendees", help="comma-separated emails — sends invites")
+    pa.add_argument("--all-day", action="store_true")
+    pa.set_defaults(func=cmd_add)
+
+    pl = sub.add_parser("list", help="upcoming events (today + N days)")
+    pl.add_argument(
+        "--days",
+        type=int,
+        default=DEFAULT_DAYS,
+        help=f"days ahead to include (default: {DEFAULT_DAYS})",
+    )
+    pl.add_argument("--calendar", help="filter to one calendar by name")
+    pl.set_defaults(func=cmd_list)
+
+    args = ap.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
