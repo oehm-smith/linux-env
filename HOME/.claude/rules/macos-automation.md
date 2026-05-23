@@ -103,7 +103,7 @@ Only call `remind done <id>` when Brooke explicitly tells you a reminder is done
 
 ### `remind list` — triage view + query
 ```
-remind list                              # HIGH PRIORITY → DUE TODAY → OVERDUE (newest first)
+remind list                              # HIGH PRIORITY → DUE TODAY → OVERDUE → UPCOMING (capped)
 remind list --list "Work"                # filter to one list
 remind list --show nodue                 # also include items with no due date
 remind list --show all                   # everything, including snoozed/upcoming
@@ -115,7 +115,7 @@ remind list --due-from "2026-04-01" --due-to "2026-05-01"
 remind list --no-due                     # items without a due date only
 ```
 
-Default view hides snoozed/upcoming and items without due dates; counts appear in a footer with the hint to use `--show`.
+Default view shows HIGH PRIORITY → DUE TODAY → OVERDUE (newest first) → UPCOMING. The UPCOMING section is capped: always shows everything in the next 7 days (even if >4), otherwise fills up to 4 from the 8–30 day window. Items beyond 30 days and items with no due date are hidden with footer counts. Output is column-aligned: `id  list  due  details`.
 
 Any query filter (`--name`, `--notes`, `--priority`, `--due-from`, `--due-to`, `--no-due`) implicitly flips visibility to `--show all` so filtered matches aren't hidden. Text filters are regex, case-insensitive by default (`--case-sensitive` or inline `(?-i:...)` to override). Reminders themselves have no tags — Apple doesn't expose them through any scriptable API — so `--list` and `--name` are the categorization axes.
 

@@ -161,30 +161,35 @@ def triage(items):
     return buckets
 
 
-def fmt_item(it, today):
+LIST_COL_W = 16
+DUE_COL_W = 24
+UPCOMING_MAX = 4
+UPCOMING_WINDOW_DAYS = 30
+
+
+def fmt_due(due, today):
+    if due is None:
+        return "—"
+    delta = (due.date() - today.date()).days
+    if delta == 0:
+        return f"today {due.strftime('%H:%M')}"
+    if delta < 0:
+        return f"{due.strftime('%Y-%m-%d')} ({-delta}d ago)"
+    return due.strftime("%Y-%m-%d %H:%M")
+
+
+def fmt_row(it, today, drop_high_tag=False):
     sid = short_id(it["id"])
-    list_tag = f"[{it['list']}]"
-    pri_tag = ""
-    if it["priority"] == 1:
-        pri_tag = " *HIGH*"
+    list_col = it["list"][:LIST_COL_W].ljust(LIST_COL_W)
+    due_col = fmt_due(it["due"], today).ljust(DUE_COL_W)
+    details = it["name"]
+    if it["priority"] == 1 and not drop_high_tag:
+        details += " *HIGH*"
     elif it["priority"] == 5:
-        pri_tag = " (med)"
+        details += " (med)"
     elif it["priority"] == 9:
-        pri_tag = " (low)"
-    due_str = ""
-    if it["due"]:
-        delta = (it["due"].date() - today.date()).days
-        if delta == 0:
-            due_str = f"  due today {it['due'].strftime('%H:%M')}"
-        elif delta < 0:
-            n = -delta
-            due_str = (
-                f"  due {it['due'].strftime('%Y-%m-%d')} "
-                f"({n} day{'s' if n != 1 else ''} ago)"
-            )
-        else:
-            due_str = f"  due {it['due'].strftime('%Y-%m-%d %H:%M')}"
-    return f"  {sid}  {list_tag:<22} {it['name']}{pri_tag}{due_str}"
+        details += " (low)"
+    return f"  {sid}  {list_col}  {due_col}  {details}"
 
 
 def cmd_list(args):
@@ -235,8 +240,41 @@ def cmd_list(args):
     buckets = triage(items)
 
     show_nodue = args.show in ("nodue", "all")
-    show_future = args.show == "all"
+    show_all_future = args.show == "all"
     today = dt.datetime.now()
+    today_d = today.date()
+    week_end = today_d + dt.timedelta(days=7)
+    month_end = today_d + dt.timedelta(days=UPCOMING_WINDOW_DAYS)
+
+    # UPCOMING bucket selection. Always show every item in the next 7 days
+    # (even if >4); otherwise fill from week-2-to-30-days to a max of 4.
+    if show_all_future:
+        upcoming = buckets["future"]
+        upcoming_label = "UPCOMING"
+    else:
+        within_week = [it for it in buckets["future"] if it["due"].date() <= week_end]
+        if len(within_week) >= UPCOMING_MAX:
+            upcoming = within_week
+            upcoming_label = f"UPCOMING (next 7 days: {len(within_week)})"
+        else:
+            extra = [
+                it
+                for it in buckets["future"]
+                if week_end < it["due"].date() <= month_end
+            ]
+            slots_left = UPCOMING_MAX - len(within_week)
+            upcoming = within_week + extra[:slots_left]
+            total_in_month = len(within_week) + len(extra)
+            if len(upcoming) < total_in_month:
+                upcoming_label = (
+                    f"UPCOMING (next 30 days, {len(upcoming)} of {total_in_month})"
+                )
+            elif within_week and extra:
+                upcoming_label = "UPCOMING (next 30 days)"
+            elif within_week:
+                upcoming_label = "UPCOMING (next 7 days)"
+            else:
+                upcoming_label = "UPCOMING (next 30 days)"
 
     sections = []
     if buckets["high"]:
@@ -245,8 +283,8 @@ def cmd_list(args):
         sections.append(("DUE TODAY", buckets["today"]))
     if buckets["overdue"]:
         sections.append(("OVERDUE", buckets["overdue"]))
-    if show_future and buckets["future"]:
-        sections.append(("UPCOMING / SNOOZED", buckets["future"]))
+    if upcoming:
+        sections.append((upcoming_label, upcoming))
     if show_nodue and buckets["nodue"]:
         sections.append(("NO DUE DATE", buckets["nodue"]))
 
@@ -257,13 +295,15 @@ def cmd_list(args):
             if i > 0:
                 print()
             print(title)
+            is_high = title == "HIGH PRIORITY"
             for it in group:
-                print(fmt_item(it, today))
+                print(fmt_row(it, today, drop_high_tag=is_high))
 
     notes = []
-    if not show_future and buckets["future"]:
-        nxt = buckets["future"][0]["due"].strftime("%Y-%m-%d")
-        notes.append(f"{len(buckets['future'])} snoozed/upcoming (next: {nxt})")
+    if not show_all_future:
+        hidden_future = len(buckets["future"]) - len(upcoming)
+        if hidden_future > 0:
+            notes.append(f"{hidden_future} more upcoming beyond 30 days")
     if not show_nodue and buckets["nodue"]:
         notes.append(f"{len(buckets['nodue'])} without due date")
     if notes:
