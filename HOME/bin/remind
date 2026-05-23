@@ -337,50 +337,53 @@ def cmd_done(args):
 _PRIORITY_INT_TO_LABEL = {1: "high", 5: "medium", 9: "low"}
 
 
+def _snooze_one(it, when):
+    """Re-create one reminder with a new due date; return ('ok', None) or ('warn'/'fail', msg)."""
+    add_cmd = ["reminders", "add", it["list"], it["name"]]
+    if it["priority"] in _PRIORITY_INT_TO_LABEL:
+        add_cmd.extend(["-p", _PRIORITY_INT_TO_LABEL[it["priority"]]])
+    if it.get("notes"):
+        add_cmd.extend(["-n", it["notes"]])
+    add_cmd.extend(["-d", when.strftime("%Y-%m-%d %H:%M")])
+    add_p = run(add_cmd)
+    if add_p.returncode != 0:
+        return ("fail", f"add failed: {add_p.stderr.strip()}")
+    del_p = run(["reminders", "delete", it["list"], it["id"]])
+    if del_p.returncode != 0:
+        return ("warn", f"new copy created; delete of original failed: {del_p.stderr.strip()}")
+    return ("ok", None)
+
+
 def cmd_snooze(args):
-    """Snooze = move due date forward.
+    """Snooze one or more reminders to the same new due date.
 
     Reminders.app AppleScript writes to existing reminders hang at scale and
     reminders-cli has no due-date edit. Workaround: add a new reminder with the
     updated due date, then delete the original. The reminder's UUID changes.
     """
-    when = parse_when(args.when)
-    it = resolve(args.id)
+    if len(args.targets) < 2:
+        sys.exit("usage: remind snooze <id> [<id> ...] <when>")
+    when_str = args.targets[-1]
+    id_strs = args.targets[:-1]
+    when = parse_when(when_str)
 
-    # Fetch the full original record so we can recreate it faithfully.
-    p = run(["reminders", "show", it["list"], "--format=json"])
-    if p.returncode != 0:
-        sys.exit(f"snooze: could not read list {it['list']!r}: {p.stderr.strip()}")
-    original = next(
-        (r for r in json.loads(p.stdout) if r["externalId"] == it["id"]), None
-    )
-    if original is None:
-        sys.exit(f"snooze: reminder {short_id(it['id'])} no longer exists")
+    # Resolve all ids against a single fetch so we don't N+1 the API.
+    items = fetch_all()
+    resolved = [resolve(s, items) for s in id_strs]
 
-    add_cmd = ["reminders", "add", it["list"], original["title"]]
-    pri = original.get("priority", 0)
-    if pri in _PRIORITY_INT_TO_LABEL:
-        add_cmd.extend(["-p", _PRIORITY_INT_TO_LABEL[pri]])
-    if original.get("notes"):
-        add_cmd.extend(["-n", original["notes"]])
-    add_cmd.extend(["-d", when.strftime("%Y-%m-%d %H:%M")])
-
-    add_p = run(add_cmd)
-    if add_p.returncode != 0:
-        sys.exit(f"snooze: re-add failed (original kept): {add_p.stderr.strip()}")
-
-    # Only delete the original AFTER the new one is in place.
-    del_p = run(["reminders", "delete", it["list"], it["id"]])
-    if del_p.returncode != 0:
-        print(
-            f"WARNING: re-add succeeded but delete of original {short_id(it['id'])} "
-            f"failed — you have two copies now. {del_p.stderr.strip()}",
-            file=sys.stderr,
-        )
-    print(
-        f"snoozed {short_id(it['id'])} → new copy, "
-        f"due {when.strftime('%Y-%m-%d %H:%M')}: {original['title']}"
-    )
+    pretty = when.strftime("%Y-%m-%d %H:%M")
+    rc = 0
+    for it in resolved:
+        status, msg = _snooze_one(it, when)
+        if status == "ok":
+            print(f"  ✓ {short_id(it['id'])}  [{it['list']}]  {it['name']}  → {pretty}")
+        elif status == "warn":
+            print(f"  ! {short_id(it['id'])}  [{it['list']}]  {it['name']}  → {pretty}  ({msg})", file=sys.stderr)
+            rc = 1
+        else:
+            print(f"  ✗ {short_id(it['id'])}  [{it['list']}]  {it['name']}  ({msg})", file=sys.stderr)
+            rc = 1
+    sys.exit(rc)
 
 
 def main():
@@ -445,11 +448,19 @@ def main():
     )
     pl.set_defaults(func=cmd_list)
 
-    ps = sub.add_parser("snooze", help="push a reminder's due date forward")
-    ps.add_argument("id", help="reminder id or 4+ char hex prefix")
+    ps = sub.add_parser(
+        "snooze",
+        help="push one or more reminders' due dates forward",
+        description=(
+            "Last positional is the new due (when); preceding positionals are reminder "
+            "ids or 4+ char hex prefixes. All ids get the same new due."
+        ),
+    )
     ps.add_argument(
-        "when",
-        help='today | tomorrow | +Nd|+Nw|+Nh | next mon..sun | YYYY-MM-DD [HH:MM]',
+        "targets",
+        nargs="+",
+        metavar="ID_OR_WHEN",
+        help='<id> [<id> ...] <when>  (when: today | tomorrow | +Nd|+Nw|+Nh | next mon..sun | YYYY-MM-DD [HH:MM])',
     )
     ps.set_defaults(func=cmd_snooze)
 

@@ -128,17 +128,17 @@ remind add "Plan holiday" --due "+2w" --notes "Need to book by end of month"
 
 `--due` accepts: `today`, `tomorrow`, `+3d`, `+1w`, `next monday`, `YYYY-MM-DD`, with optional ` HH:MM`. `--priority high|medium|low`.
 
-### `remind snooze` — push to a future date
+### `remind snooze` — push one or more reminders to a future date
 ```
 remind snooze abc12345 tomorrow
-remind snooze abc12345 +3d
+remind snooze abc12345 def67890 ghi54321 +3d   # batch, same new due
 remind snooze abc12345 "next monday 09:00"
 remind snooze abc12345 2026-06-15
 ```
 
-Accepts the short hex id from `remind list` (4+ chars, must be unique) or the full `x-apple-reminder://...` URL.
+Last positional is always the `when`; everything before it is treated as ids. Each id can be a short hex prefix (4+ chars, must be unique) or the full `x-apple-reminder://...` URL. All ids resolve against a single fetch so batches don't hit the API per-item.
 
-Implementation note: snooze is implemented as add-new-then-delete-old (because no available macOS API can edit a reminder's due date reliably). The reminder's UUID changes after snooze; refer to it by the new short id from the next `remind list` output.
+Implementation note: snooze is implemented as add-new-then-delete-old (because no available macOS API can edit a reminder's due date reliably). Each reminder's UUID changes after snooze; refer to them by the new short ids from the next `remind list` output.
 
 ### `remind done` — explicit completion only
 ```
