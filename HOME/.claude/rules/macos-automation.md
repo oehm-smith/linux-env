@@ -147,6 +147,20 @@ remind done abc12345
 
 See critical rule above. Never call without Brooke explicitly naming the reminder/id.
 
+### `remind edit` — change a reminder's fields
+```
+remind edit abc12345 --title "new title"
+remind edit abc12345 --notes "new notes"            # use empty string to clear
+remind edit abc12345 --priority high                # one of high/medium/low/none
+remind edit abc12345 --due "2026-05-31 16:00"
+remind edit abc12345 --list "New Farm"              # move between lists
+remind edit abc12345 --title "..." --due "..."      # combine; one re-add when recreate is needed
+```
+
+Title and notes edits are in-place (UUID preserved). Due, priority, and list changes recreate the reminder (UUID changes) because no scriptable macOS API can edit those fields. All pending changes apply in a single re-add when recreating.
+
+Caveat: reminders-cli `delete` occasionally returns success without actually completing the delete (CloudKit eventual-consistency). On rapid-fire recreate cycles you may end up with the occasional orphan. Resolve via `remind list --name <pattern>` and `remind done` (or delete in Reminders.app).
+
 There is intentionally **no `remind delete`** and **no `cal delete`** — completion or letting events pass is the only "remove" path.
 
 **Notes:** All macOS automation requires privacy permissions (System Settings > Privacy & Security > Automation). Contacts are stored in project memory.

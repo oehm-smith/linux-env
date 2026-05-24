@@ -334,6 +334,74 @@ def cmd_done(args):
     print(f"completed {short_id(it['id'])}: {it['name']}  [{it['list']}]")
 
 
+def cmd_edit(args):
+    """Edit a reminder's fields.
+
+    Title and notes are edited in-place via reminders-cli (UUID preserved).
+    Due date, priority, and list cannot be edited by any available API, so a
+    change to any of those forces a delete+re-add (UUID changes). When recreating
+    we apply ALL pending changes in one shot so a single command suffices.
+    """
+    if not any(
+        [args.title is not None, args.notes is not None, args.due, args.priority, args.list]
+    ):
+        sys.exit("nothing to change — pass at least one of --title/--notes/--due/--priority/--list")
+
+    items = fetch_all()
+    it = resolve(args.id, items)
+
+    current_pri_label = _PRIORITY_INT_TO_LABEL.get(it["priority"], "none")
+    changing_list = args.list is not None and args.list != it["list"]
+    changing_due = args.due is not None
+    changing_priority = args.priority is not None and args.priority != current_pri_label
+    needs_recreate = changing_list or changing_due or changing_priority
+
+    if not needs_recreate:
+        cmd = ["reminders", "edit", it["list"], it["id"]]
+        if args.notes is not None:
+            cmd.extend(["-n", args.notes])
+        if args.title is not None:
+            cmd.append(args.title)
+        p = run(cmd)
+        if p.returncode != 0:
+            sys.exit(f"edit failed: {p.stderr.strip()}")
+        final_title = args.title if args.title is not None else it["name"]
+        print(f"  ✓ {short_id(it['id'])}  [{it['list']}]  {final_title}")
+        return
+
+    new_title = args.title if args.title is not None else it["name"]
+    new_notes = args.notes if args.notes is not None else it.get("notes", "")
+    new_priority = args.priority if args.priority else current_pri_label
+    new_list = args.list if args.list else it["list"]
+    new_due = parse_when(args.due) if args.due else it["due"]
+
+    add_cmd = ["reminders", "add", new_list, new_title]
+    if new_priority and new_priority != "none":
+        add_cmd.extend(["-p", new_priority])
+    if new_notes:
+        add_cmd.extend(["-n", new_notes])
+    if new_due:
+        add_cmd.extend(["-d", new_due.strftime("%Y-%m-%d %H:%M")])
+
+    add_p = run(add_cmd)
+    if add_p.returncode != 0:
+        sys.exit(f"edit: add to {new_list!r} failed (original kept): {add_p.stderr.strip()}")
+
+    del_p = run(["reminders", "delete", it["list"], it["id"]])
+    if del_p.returncode != 0:
+        print(
+            f"  ! created new copy in {new_list!r}; delete of original "
+            f"{short_id(it['id'])} failed: {del_p.stderr.strip()}",
+            file=sys.stderr,
+        )
+
+    due_str = new_due.strftime("%Y-%m-%d %H:%M") if new_due else "no due"
+    print(
+        f"  ✓ {short_id(it['id'])} recreated  [{new_list}]  {new_title}  → {due_str}  "
+        f"(new id surfaces in next `remind list`)"
+    )
+
+
 _PRIORITY_INT_TO_LABEL = {1: "high", 5: "medium", 9: "low"}
 
 
@@ -469,6 +537,27 @@ def main():
     )
     pd.add_argument("id", help="reminder id or 4+ char hex prefix")
     pd.set_defaults(func=cmd_done)
+
+    pe = sub.add_parser(
+        "edit",
+        help="change a reminder's title/notes/due/priority/list",
+        description=(
+            "Title and notes edits happen in-place (UUID preserved). "
+            "Due/priority/list changes require recreating the reminder via "
+            "delete+re-add (UUID changes) because no API edits those fields. "
+            "All pending changes apply in one re-add when a recreate is needed."
+        ),
+    )
+    pe.add_argument("id", help="reminder id or 4+ char hex prefix")
+    pe.add_argument("--title", help="new title")
+    pe.add_argument("--notes", help="new notes (use empty string to clear)")
+    pe.add_argument(
+        "--due",
+        help='new due: today | tomorrow | +Nd|+Nw|+Nh | next mon..sun | YYYY-MM-DD [HH:MM]',
+    )
+    pe.add_argument("--priority", choices=["high", "medium", "low", "none"])
+    pe.add_argument("--list", help="move to a different list")
+    pe.set_defaults(func=cmd_edit)
 
     args = ap.parse_args()
     args.func(args)
