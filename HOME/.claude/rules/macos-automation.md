@@ -163,4 +163,27 @@ Caveat: reminders-cli `delete` occasionally returns success without actually com
 
 There is intentionally **no `remind delete`** and **no `cal delete`** — completion or letting events pass is the only "remove" path.
 
+## Daily summary digest (`~/bin/daily-summary`)
+
+Scheduled via launchd at 07:00 daily — texts Brooke's mobile (0412 024 742) a digest of:
+- HIGH PRIORITY reminders (any due date)
+- Reminders due today (excluding HIGH which already surfaced above)
+- Calendar events for today + tomorrow (via icalBuddy)
+
+```
+daily-summary              # send the digest now
+daily-summary --dry-run    # preview the message without sending
+```
+
+LaunchAgent at `~/Library/LaunchAgents/com.brooke.daily-summary.plist`. Logs at `~/Library/Logs/daily-summary.{log,err}`. The plist sets PATH for launchd's bare environment and the script itself uses absolute paths for `reminders`, `icalBuddy`, `osascript`.
+
+Mac-asleep behaviour: launchd's `StartCalendarInterval` does not wake the Mac. If asleep at 07:00 the job fires when next awake. To enforce strict timing add `sudo pmset repeat wake MTWRFSU 06:55:00`.
+
+Manage with:
+```
+launchctl list | grep daily-summary
+launchctl bootout gui/$(id -u)/com.brooke.daily-summary     # disable
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brooke.daily-summary.plist  # re-enable
+```
+
 **Notes:** All macOS automation requires privacy permissions (System Settings > Privacy & Security > Automation). Contacts are stored in project memory.

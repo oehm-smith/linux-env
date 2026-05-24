@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+# ABOUTME: Daily morning digest — texts HIGH + due-today reminders + today/tomorrow calendar to Brooke.
+# ABOUTME: Designed for launchd at 07:00. Absolute paths; logs to stdout/stderr.
+
+import datetime as dt
+import json
+import subprocess
+import sys
+
+
+REMINDERS = "/opt/homebrew/bin/reminders"
+ICALBUDDY = "/opt/homebrew/bin/icalBuddy"
+OSASCRIPT = "/usr/bin/osascript"
+
+# Brooke's mobile (Australian, +61). Local format works for iMessage to-self.
+PHONE = "0412024742"
+
+
+def parse_due(raw):
+    if not raw:
+        return None
+    try:
+        u = dt.datetime.strptime(raw, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return None
+    return u.replace(tzinfo=dt.timezone.utc).astimezone().replace(tzinfo=None)
+
+
+def remind_buckets():
+    """Return (high_priority, due_today) lists of dicts.
+
+    high_priority: every incomplete reminder with priority=1, any due date.
+    due_today: incomplete, non-high-priority, with a due date that falls today.
+    """
+    p = subprocess.run(
+        [REMINDERS, "show-all", "--format=json"],
+        capture_output=True, text=True, check=True,
+    )
+    items = json.loads(p.stdout)
+
+    today = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow = today + dt.timedelta(days=1)
+
+    high, due_today = [], []
+    for r in items:
+        if r.get("isCompleted"):
+            continue
+        due = parse_due(r.get("dueDate"))
+        rec = {"title": r.get("title", ""), "list": r.get("list", ""), "due": due}
+        if r.get("priority") == 1:
+            high.append(rec)
+        elif due and today <= due < tomorrow:
+            due_today.append(rec)
+
+    high.sort(key=lambda x: (x["due"] or dt.datetime.max))
+    due_today.sort(key=lambda x: x["due"])
+    return high, due_today
+
+
+def cal_block():
+    """Return icalBuddy formatted block for today + tomorrow, or '' on failure."""
+    p = subprocess.run(
+        [
+            ICALBUDDY, "-sd", "-nrd",
+            "-tf", "%H:%M", "-df", "%a %d %b",
+            "-nnr", " | ",
+            "-b", "• ",
+            "eventsToday+1",
+        ],
+        capture_output=True, text=True, check=False,
+    )
+    return p.stdout.strip()
+
+
+def fmt_due_relative(due):
+    if not due:
+        return ""
+    today = dt.date.today()
+    delta = (due.date() - today).days
+    if delta < 0:
+        return f" ({-delta}d overdue)"
+    if delta == 0:
+        return f" (today {due.strftime('%H:%M')})"
+    if delta == 1:
+        return f" (tomorrow {due.strftime('%H:%M')})"
+    return f" (in {delta}d)"
+
+
+def build_message(high, due_today, cal):
+    today_str = dt.date.today().strftime("%a %d %b %Y")
+    parts = [f"Daily summary — {today_str}", ""]
+    if high:
+        parts.append("HIGH PRIORITY:")
+        for r in high:
+            parts.append(f"• {r['title']} [{r['list']}]{fmt_due_relative(r['due'])}")
+        parts.append("")
+    if due_today:
+        parts.append("DUE TODAY:")
+        for r in due_today:
+            parts.append(f"• {r['due'].strftime('%H:%M')}  {r['title']} [{r['list']}]")
+        parts.append("")
+    if cal:
+        parts.append("CALENDAR (today + tomorrow):")
+        parts.append(cal)
+    else:
+        parts.append("CALENDAR: nothing scheduled.")
+    if not (high or due_today or cal):
+        parts.append("(quiet morning — nothing urgent.)")
+    return "\n".join(parts)
+
+
+def send_imessage(msg, phone):
+    escaped = msg.replace("\\", "\\\\").replace('"', '\\"')
+    script = (
+        f'tell application "Messages"\n'
+        f'  send "{escaped}" to buddy "{phone}" of (1st account whose service type = iMessage)\n'
+        f'end tell\n'
+    )
+    p = subprocess.run(
+        [OSASCRIPT, "-"],
+        input=script, capture_output=True, text=True,
+    )
+    if p.returncode != 0:
+        print(f"Messages send failed: {p.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+
+
+def main():
+    dry_run = "--dry-run" in sys.argv
+    high, due_today = remind_buckets()
+    cal = cal_block()
+    msg = build_message(high, due_today, cal)
+
+    print(f"--- {dt.datetime.now().isoformat()} ---")
+    print(msg)
+    print("---")
+    if dry_run:
+        print("(dry run; iMessage not sent)")
+        return
+    send_imessage(msg, PHONE)
+    print(f"sent to {PHONE}")
+
+
+if __name__ == "__main__":
+    main()
