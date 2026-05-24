@@ -43,7 +43,9 @@
       "Bash(git -C * rev-parse*)",
       "Bash(git -C * remote*)",
       "Bash(git -C * blame*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(remind:*)",
+      "Bash(cal:*)"
     ]
   },
   "hooks": {

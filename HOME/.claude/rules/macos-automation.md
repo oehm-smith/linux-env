@@ -52,35 +52,138 @@ tell application "Messages"
 end tell'
 ```
 
-### Send Calendar Invite
-When Brooke says "send calendar invite" or "create a meeting":
+## Calendar (`~/bin/cal`)
+
+Python CLI for Calendar.app. Reads via `icalBuddy` (fast, handles recurring events correctly); writes via osascript. Use this — do NOT shell out to raw `osascript -e 'tell application "Calendar"...'`.
+
+Prerequisite: `brew install ical-buddy`.
+
+### `cal add` — create event / send invite
+When Brooke says "send calendar invite", "create a meeting", or "add to calendar":
 1. Look up attendees in project memory
 2. Confirm details if not fully specified
-3. Create on **Brooke Work** calendar — sends invite automatically
-4. Confirm creation
+3. Run `cal add` — defaults to the **Brooke Work** calendar
+4. Confirm creation back to Brooke
 
-```bash
-osascript -e '
-tell application "Calendar"
-    tell calendar "Brooke Work"
-        set startDate to current date
-        set year of startDate to YEAR
-        set month of startDate to MONTH
-        set day of startDate to DAY
-        set hours of startDate to START_HOUR
-        set minutes of startDate to 0
-        set seconds of startDate to 0
-        set endDate to current date
-        set year of endDate to YEAR
-        set month of endDate to MONTH
-        set day of endDate to DAY
-        set hours of endDate to END_HOUR
-        set minutes of endDate to 0
-        set seconds of endDate to 0
-        set newEvent to make new event with properties {summary:"TITLE", start date:startDate, end date:endDate, location:"LOCATION", description:"DESCRIPTION"}
-        make new attendee at end of attendees of newEvent with properties {email:"EMAIL"}
-    end tell
-end tell'
+```
+cal add "Project review" --start "2026-06-01 14:00" --duration 60
+cal add "Dentist" --start "tomorrow 09:30" --duration 30 --calendar "Brooke"
+cal add "Stand-up" --start "today 10:00" --end "today 10:15" --attendees "alice@x.com,bob@y.com" --location "Zoom"
+cal add "Public holiday" --start "2026-06-09" --all-day --calendar "Brooke"
+```
+
+Start/end accept: `today`, `tomorrow`, `+3d`, `next monday`, `YYYY-MM-DD`, any of the above with optional ` HH:MM`. Either `--end` or `--duration` (minutes); default 60 min if neither.
+
+Adding `--attendees` sends invitations automatically.
+
+### `cal list` — upcoming events + query
+```
+cal list                                        # today + next 7 days
+cal list --days 14
+cal list --from "2026-06-01" --to "2026-06-15"  # explicit range
+cal list --calendar "Brooke Work"
+cal list --name "standup"                       # title regex
+cal list --location "zoom"                      # location regex
+cal list --notes "Q3 plan"                      # description regex
+cal list --attendees "alice@"                   # attendee regex
+cal list --no-all-day                           # hide birthdays/holidays
+cal list --all-day-only
+```
+
+Text filters are regex, case-insensitive by default. Add `--case-sensitive` or use an inline `(?-i:...)` group for case-sensitive matching. Filters compose freely.
+
+## Reminders (`~/bin/remind`)
+
+Python CLI for Apple Reminders. All operations via `reminders-cli` (Reminders.app AppleScript is unusably slow at scale and writes to existing reminders silently fail). Use this — do NOT shell out to raw osascript for reminders.
+
+Prerequisite: `brew install keith/formulae/reminders-cli`.
+
+**CRITICAL behavioural rule — never auto-complete reminders.**
+Only call `remind done <id>` when Brooke explicitly tells you a reminder is done, by name or short id. Inferring completion from context (e.g. "we shipped that PR" → ticking off a related reminder) is FORBIDDEN. Brooke's biggest problem is reminders silently disappearing on him; an over-eager tick erases his trust in the tool. When unsure, ASK.
+
+### `remind list` — triage view + query
+```
+remind list                              # HIGH PRIORITY → DUE TODAY → OVERDUE → UPCOMING (capped)
+remind list --list "Work"                # filter to one list
+remind list --show nodue                 # also include items with no due date
+remind list --show all                   # everything, including snoozed/upcoming
+remind list --all                        # alias for --show all
+remind list --name "ring|call|email"     # title regex
+remind list --notes "ABC"                # notes regex
+remind list --priority high              # one of high/medium/low/none
+remind list --due-from "2026-04-01" --due-to "2026-05-01"
+remind list --no-due                     # items without a due date only
+```
+
+Default view shows HIGH PRIORITY → DUE TODAY → OVERDUE (newest first) → UPCOMING. The UPCOMING section is capped: always shows everything in the next 7 days (even if >4), otherwise fills up to 4 from the 8–30 day window. Items beyond 30 days and items with no due date are hidden with footer counts. Output is column-aligned: `id  list  due  details`.
+
+Any query filter (`--name`, `--notes`, `--priority`, `--due-from`, `--due-to`, `--no-due`) implicitly flips visibility to `--show all` so filtered matches aren't hidden. Text filters are regex, case-insensitive by default (`--case-sensitive` or inline `(?-i:...)` to override). Reminders themselves have no tags — Apple doesn't expose them through any scriptable API — so `--list` and `--name` are the categorization axes.
+
+### `remind add` — create a reminder
+```
+remind add "Send tax docs" --list "Work" --due "tomorrow 17:00" --priority high
+remind add "Buy milk" --list "Shopping"
+remind add "Plan holiday" --due "+2w" --notes "Need to book by end of month"
+```
+
+`--due` accepts: `today`, `tomorrow`, `+3d`, `+1w`, `next monday`, `YYYY-MM-DD`, with optional ` HH:MM`. `--priority high|medium|low`.
+
+### `remind snooze` — push one or more reminders to a future date
+```
+remind snooze abc12345 tomorrow
+remind snooze abc12345 def67890 ghi54321 +3d   # batch, same new due
+remind snooze abc12345 "next monday 09:00"
+remind snooze abc12345 2026-06-15
+```
+
+Last positional is always the `when`; everything before it is treated as ids. Each id can be a short hex prefix (4+ chars, must be unique) or the full `x-apple-reminder://...` URL. All ids resolve against a single fetch so batches don't hit the API per-item.
+
+Implementation note: snooze is implemented as add-new-then-delete-old (because no available macOS API can edit a reminder's due date reliably). Each reminder's UUID changes after snooze; refer to them by the new short ids from the next `remind list` output.
+
+### `remind done` — explicit completion only
+```
+remind done abc12345
+```
+
+See critical rule above. Never call without Brooke explicitly naming the reminder/id.
+
+### `remind edit` — change a reminder's fields
+```
+remind edit abc12345 --title "new title"
+remind edit abc12345 --notes "new notes"            # use empty string to clear
+remind edit abc12345 --priority high                # one of high/medium/low/none
+remind edit abc12345 --due "2026-05-31 16:00"
+remind edit abc12345 --list "New Farm"              # move between lists
+remind edit abc12345 --title "..." --due "..."      # combine; one re-add when recreate is needed
+```
+
+Title and notes edits are in-place (UUID preserved). Due, priority, and list changes recreate the reminder (UUID changes) because no scriptable macOS API can edit those fields. All pending changes apply in a single re-add when recreating.
+
+Caveat: reminders-cli `delete` occasionally returns success without actually completing the delete (CloudKit eventual-consistency). On rapid-fire recreate cycles you may end up with the occasional orphan. Resolve via `remind list --name <pattern>` and `remind done` (or delete in Reminders.app).
+
+There is intentionally **no `remind delete`** and **no `cal delete`** — completion or letting events pass is the only "remove" path.
+
+## Daily summary digest (`~/bin/daily-summary`)
+
+Scheduled via launchd at 07:00 daily — texts Brooke's mobile (0412 024 742) a digest of:
+- HIGH PRIORITY reminders (any due date)
+- Reminders due today (excluding HIGH which already surfaced above)
+- Calendar events for today + tomorrow (via icalBuddy)
+
+```
+daily-summary              # send the digest now
+daily-summary --dry-run    # preview the message without sending
+```
+
+LaunchAgent at `~/Library/LaunchAgents/com.brooke.daily-summary.plist`. Logs at `~/Library/Logs/daily-summary.{log,err}`. The plist sets PATH for launchd's bare environment and the script itself uses absolute paths for `reminders`, `icalBuddy`, `osascript`.
+
+Mac-asleep behaviour: launchd's `StartCalendarInterval` does not wake the Mac. If asleep at 07:00 the job fires when next awake. To enforce strict timing add `sudo pmset repeat wake MTWRFSU 06:55:00`.
+
+Manage with:
+```
+launchctl list | grep daily-summary
+launchctl bootout gui/$(id -u)/com.brooke.daily-summary     # disable
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brooke.daily-summary.plist  # re-enable
 ```
 
 **Notes:** All macOS automation requires privacy permissions (System Settings > Privacy & Security > Automation). Contacts are stored in project memory.

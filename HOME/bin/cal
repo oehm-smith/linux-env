@@ -1,0 +1,453 @@
+#!/usr/bin/env python3
+# ABOUTME: CLI for Apple Calendar — list with rich filters via parsed icalBuddy, add via osascript.
+# ABOUTME: Stdlib only.
+#
+# PURPOSE
+#   Show upcoming events grouped by date (today + N days, or --from/--to) with
+#   regex filters on title/location/notes/attendees, and create new events
+#   optionally inviting attendees (which sends the invite via Calendar.app).
+#
+# DEPENDENCY (one-time)
+#   brew install ical-buddy
+#
+# DAILY DIGEST
+#   ~/bin/daily-summary calls icalBuddy directly to include today + tomorrow's
+#   calendar in the 07:00 iMessage digest. The LaunchAgent lives at
+#   ~/Library/LaunchAgents/com.brooke.daily-summary.plist; see the daily-summary
+#   script header for the full setup + plist template.
+#
+#   Quick reinstall after a fresh dotfiles checkout:
+#       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brooke.daily-summary.plist
+#
+# RELATED
+#   ~/bin/remind                           paired reminders CLI (same conventions)
+#   ~/bin/daily-summary                    07:00 iMessage digest consumer
+#   ~/.claude/rules/macos-automation.md    usage rules and behavioural conventions
+
+import argparse
+import datetime as dt
+import re
+import subprocess
+import sys
+from collections import defaultdict
+
+
+DEFAULT_CALENDAR = "Brooke Work"
+DEFAULT_DAYS = 7
+
+
+def esc(s):
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def set_date_block(var, d):
+    return (
+        f"set {var} to current date\n"
+        f"set year of {var} to {d.year}\n"
+        f"set month of {var} to {d.month}\n"
+        f"set day of {var} to {d.day}\n"
+        f"set hours of {var} to {d.hour}\n"
+        f"set minutes of {var} to {d.minute}\n"
+        f"set seconds of {var} to 0\n"
+    )
+
+
+def parse_when(s):
+    """Parse a date/datetime spec: today, tomorrow, +Nd, next mon..sun, YYYY-MM-DD [HH:MM]."""
+    s = s.strip().lower()
+    tm = re.search(r"\s+(\d{1,2}):(\d{2})$", s)
+    if tm:
+        hour = int(tm.group(1))
+        minute = int(tm.group(2))
+        base = s[: tm.start()].strip()
+    else:
+        hour, minute = 9, 0
+        base = s
+
+    now = dt.datetime.now().replace(second=0, microsecond=0)
+    today = now.replace(hour=hour, minute=minute)
+
+    if base == "today":
+        return today
+    if base == "tomorrow":
+        return today + dt.timedelta(days=1)
+    m = re.match(r"^\+(\d+)([dwh])$", base)
+    if m:
+        n = int(m.group(1))
+        u = m.group(2)
+        if u == "d":
+            return today + dt.timedelta(days=n)
+        if u == "w":
+            return today + dt.timedelta(weeks=n)
+        if u == "h":
+            return now + dt.timedelta(hours=n)
+    m = re.match(r"^next (mon|tue|wed|thu|fri|sat|sun)(?:day)?$", base)
+    if m:
+        weekday = dict(mon=0, tue=1, wed=2, thu=3, fri=4, sat=5, sun=6)[m.group(1)]
+        delta = (weekday - today.weekday()) % 7
+        if delta == 0:
+            delta = 7
+        return today + dt.timedelta(days=delta)
+    try:
+        d = dt.datetime.strptime(base, "%Y-%m-%d")
+        return d.replace(hour=hour, minute=minute)
+    except ValueError:
+        pass
+    sys.exit(f"unrecognized date: {s!r}")
+
+
+def parse_range_bound(s, end):
+    """Like parse_when but snap to day boundary when no explicit time given."""
+    s = s.strip().lower()
+    has_time = bool(re.search(r"\s+\d{1,2}:\d{2}$", s))
+    d = parse_when(s)
+    if not has_time:
+        if end:
+            d = d.replace(hour=23, minute=59, second=59)
+        else:
+            d = d.replace(hour=0, minute=0, second=0)
+    return d
+
+
+_PROP_LINE = re.compile(r"^    (notes|location|uid|url|attendees|priority):\s*(.*)$")
+_DT_TIMED_RANGE = re.compile(
+    r"^(\d{4}-\d{2}-\d{2})\s+at\s+(\d{2}:\d{2})\s+-\s+(\d{2}:\d{2})$"
+)
+_DT_TIMED_MULTI = re.compile(
+    r"^(\d{4}-\d{2}-\d{2})\s+at\s+(\d{2}:\d{2})\s+-\s+(\d{4}-\d{2}-\d{2})\s+at\s+(\d{2}:\d{2})$"
+)
+_DT_TIMED_SINGLE = re.compile(r"^(\d{4}-\d{2}-\d{2})\s+at\s+(\d{2}:\d{2})$")
+_DT_ALLDAY_RANGE = re.compile(r"^(\d{4}-\d{2}-\d{2})\s+-\s+(\d{4}-\d{2}-\d{2})$")
+_DT_ALLDAY_SINGLE = re.compile(r"^(\d{4}-\d{2}-\d{2})$")
+
+
+def parse_datetime_line(s):
+    """Decode an icalBuddy datetime line into start/end/all_day."""
+    s = s.strip()
+    m = _DT_TIMED_MULTI.match(s)
+    if m:
+        return (
+            dt.datetime.strptime(f"{m.group(1)} {m.group(2)}", "%Y-%m-%d %H:%M"),
+            dt.datetime.strptime(f"{m.group(3)} {m.group(4)}", "%Y-%m-%d %H:%M"),
+            False,
+        )
+    m = _DT_TIMED_RANGE.match(s)
+    if m:
+        d = m.group(1)
+        return (
+            dt.datetime.strptime(f"{d} {m.group(2)}", "%Y-%m-%d %H:%M"),
+            dt.datetime.strptime(f"{d} {m.group(3)}", "%Y-%m-%d %H:%M"),
+            False,
+        )
+    m = _DT_TIMED_SINGLE.match(s)
+    if m:
+        return (
+            dt.datetime.strptime(f"{m.group(1)} {m.group(2)}", "%Y-%m-%d %H:%M"),
+            None,
+            False,
+        )
+    m = _DT_ALLDAY_RANGE.match(s)
+    if m:
+        return (
+            dt.datetime.strptime(m.group(1), "%Y-%m-%d"),
+            dt.datetime.strptime(m.group(2), "%Y-%m-%d"),
+            True,
+        )
+    m = _DT_ALLDAY_SINGLE.match(s)
+    if m:
+        return (dt.datetime.strptime(m.group(1), "%Y-%m-%d"), None, True)
+    return None
+
+
+def parse_icalbuddy(text):
+    """Parse icalBuddy -sc structured output into a list of event dicts."""
+    events = []
+    current_cal = None
+    cur = None
+
+    def flush():
+        nonlocal cur
+        if cur and "start" in cur:
+            events.append(cur)
+        cur = None
+
+    for line in text.splitlines():
+        if not line.strip():
+            flush()
+            continue
+        if line.startswith("    "):
+            if cur is None:
+                continue
+            m = _PROP_LINE.match(line)
+            if m:
+                cur[m.group(1)] = m.group(2)
+            else:
+                parsed = parse_datetime_line(line)
+                if parsed:
+                    cur["start"], cur["end"], cur["all_day"] = parsed
+            continue
+        if line.startswith("• "):
+            flush()
+            cur = {"calendar": current_cal, "title": line[2:].strip()}
+            continue
+        if line.rstrip().startswith("---"):
+            continue
+        # Calendar header
+        stripped = line.rstrip()
+        if stripped.endswith(":"):
+            flush()
+            current_cal = stripped[:-1]
+    flush()
+    return events
+
+
+def fetch_events(start, end, calendar):
+    """Run icalBuddy and parse its output for events in [start, end]."""
+    cmd = [
+        "icalBuddy",
+        "-sc",
+        "-uid",
+        "-nrd",
+        "-tf", "%H:%M",
+        "-df", "%Y-%m-%d",
+        "-nnr", " | ",
+        "-po", "title,datetime,location,notes,attendees,url",
+    ]
+    if calendar:
+        cmd.extend(["-ic", calendar])
+    # icalBuddy expects "eventsFrom:DATE" and "to:DATE" as TWO separate args.
+    # Time gets auto-snapped to 00:00:00 / 23:59:59 so dates-only is sufficient.
+    cmd.extend(
+        [
+            f"eventsFrom:{start.date().isoformat()}",
+            f"to:{end.date().isoformat()}",
+        ]
+    )
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        sys.exit("missing tool: icalBuddy — install with `brew install ical-buddy`")
+    if p.returncode != 0:
+        sys.stderr.write(p.stderr)
+        sys.exit(p.returncode)
+    return parse_icalbuddy(p.stdout)
+
+
+def fmt_day_header(d, today):
+    label = d.strftime("%a %d %b %Y")
+    if d == today.date():
+        label += "  (today)"
+    elif d == today.date() + dt.timedelta(days=1):
+        label += "  (tomorrow)"
+    return label
+
+
+def fmt_event(e):
+    title = e["title"]
+    cal = f" [{e['calendar']}]" if e.get("calendar") else ""
+    if e.get("all_day"):
+        time_str = "all-day"
+        if e.get("end") and e["end"].date() != e["start"].date():
+            time_str = f"all-day through {e['end'].strftime('%Y-%m-%d')}"
+    else:
+        if e.get("end"):
+            if e["end"].date() == e["start"].date():
+                time_str = f"{e['start'].strftime('%H:%M')}-{e['end'].strftime('%H:%M')}"
+            else:
+                time_str = (
+                    f"{e['start'].strftime('%H:%M')} – "
+                    f"{e['end'].strftime('%Y-%m-%d %H:%M')}"
+                )
+        else:
+            time_str = e["start"].strftime("%H:%M")
+    extras = []
+    if e.get("location"):
+        extras.append(f"@ {e['location']}")
+    if e.get("attendees"):
+        extras.append(f"w/ {e['attendees']}")
+    if e.get("url"):
+        extras.append(e["url"])
+    suffix = "  " + "  ".join(extras) if extras else ""
+    return f"  • {time_str:<11}  {title}{cal}{suffix}"
+
+
+def cmd_list(args):
+    today = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    if args.from_ or args.to:
+        start = parse_range_bound(args.from_, end=False) if args.from_ else today
+        end = parse_range_bound(args.to, end=True) if args.to else today + dt.timedelta(days=args.days)
+    else:
+        start = today
+        end = today + dt.timedelta(days=args.days + 1)
+
+    events = fetch_events(start, end, args.calendar)
+
+    re_flags = 0 if args.case_sensitive else re.IGNORECASE
+
+    def regex_filter(field, pattern):
+        try:
+            pat = re.compile(pattern, re_flags)
+        except re.error as e:
+            sys.exit(f"bad --{field} regex: {e}")
+        return pat
+
+    if args.name:
+        pat = regex_filter("name", args.name)
+        events = [e for e in events if pat.search(e["title"])]
+    if args.location:
+        pat = regex_filter("location", args.location)
+        events = [e for e in events if e.get("location") and pat.search(e["location"])]
+    if args.notes:
+        pat = regex_filter("notes", args.notes)
+        events = [e for e in events if e.get("notes") and pat.search(e["notes"])]
+    if args.attendees:
+        pat = regex_filter("attendees", args.attendees)
+        events = [e for e in events if e.get("attendees") and pat.search(e["attendees"])]
+    if args.all_day_only:
+        events = [e for e in events if e.get("all_day")]
+    if args.no_all_day:
+        events = [e for e in events if not e.get("all_day")]
+
+    if not events:
+        print("no events match.")
+        return
+
+    by_day = defaultdict(list)
+    for e in events:
+        by_day[e["start"].date()].append(e)
+
+    for day in sorted(by_day.keys()):
+        day_items = by_day[day]
+        day_items.sort(key=lambda x: (not x.get("all_day", False), x["start"]))
+        print(fmt_day_header(day, today))
+        print("-" * 24)
+        for e in day_items:
+            print(fmt_event(e))
+        print()
+
+
+def cmd_add(args):
+    start = parse_when(args.start)
+    if args.duration:
+        end = start + dt.timedelta(minutes=args.duration)
+    elif args.end:
+        end = parse_when(args.end)
+    else:
+        end = start + dt.timedelta(hours=1)
+
+    if end <= start:
+        sys.exit("end must be after start")
+
+    start_block = set_date_block("startD", start)
+    end_block = set_date_block("endD", end)
+
+    props = [f'summary:"{esc(args.title)}"', "start date:startD", "end date:endD"]
+    if args.location:
+        props.append(f'location:"{esc(args.location)}"')
+    if args.description:
+        props.append(f'description:"{esc(args.description)}"')
+    if args.all_day:
+        props.append("allday event:true")
+    props_str = "{" + ", ".join(props) + "}"
+
+    attendee_lines = []
+    if args.attendees:
+        for email in args.attendees.split(","):
+            email = email.strip()
+            if email:
+                attendee_lines.append(
+                    f'        make new attendee at end of attendees of newEvent '
+                    f'with properties {{email:"{esc(email)}"}}'
+                )
+    attendee_block = "\n".join(attendee_lines)
+
+    script = f"""
+tell application "Calendar"
+    tell calendar "{esc(args.calendar)}"
+        {start_block}{end_block}
+        set newEvent to make new event with properties {props_str}
+{attendee_block}
+        return uid of newEvent
+    end tell
+end tell
+"""
+    p = subprocess.run(
+        ["osascript", "-"],
+        input=script,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if p.returncode != 0:
+        sys.exit(f"create failed: {p.stderr.strip()}")
+    uid = p.stdout.strip()
+    if args.all_day:
+        when_str = start.strftime("%Y-%m-%d (all-day)")
+    else:
+        when_str = f"{start.strftime('%Y-%m-%d %H:%M')} – {end.strftime('%H:%M')}"
+    print(f"created event {uid}")
+    print(f"  {when_str}  · {args.title}  · [{args.calendar}]")
+    if attendee_lines:
+        print(f"  invites sent to: {args.attendees}")
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="cal", description="Apple Calendar CLI.")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    pa = sub.add_parser("add", help="create an event")
+    pa.add_argument("title", help="event title")
+    pa.add_argument(
+        "--start",
+        required=True,
+        help='today | tomorrow | +Nd | next mon..sun | YYYY-MM-DD [HH:MM]',
+    )
+    pa.add_argument("--end", help="end: same formats as --start")
+    pa.add_argument("--duration", type=int, help="minutes (alternative to --end; default 60)")
+    pa.add_argument(
+        "--calendar",
+        default=DEFAULT_CALENDAR,
+        help=f"calendar name (default: {DEFAULT_CALENDAR})",
+    )
+    pa.add_argument("--location")
+    pa.add_argument("--description")
+    pa.add_argument("--attendees", help="comma-separated emails — sends invites")
+    pa.add_argument("--all-day", action="store_true")
+    pa.set_defaults(func=cmd_add)
+
+    pl = sub.add_parser(
+        "list",
+        help="upcoming events + query filters",
+        description=(
+            "Lists events in the window (today + N days by default, or --from/--to). "
+            "Text filters use regex; case-insensitive unless --case-sensitive."
+        ),
+    )
+    pl.add_argument(
+        "--days",
+        type=int,
+        default=DEFAULT_DAYS,
+        help=f"days ahead from today (default: {DEFAULT_DAYS}); ignored if --from/--to set",
+    )
+    pl.add_argument("--from", dest="from_", help="explicit window start (overrides --days)")
+    pl.add_argument("--to", help="explicit window end (overrides --days)")
+    pl.add_argument("--calendar", help="filter to one calendar by name (passed to icalBuddy)")
+    pl.add_argument("--name", help="regex against event title")
+    pl.add_argument("--location", help="regex against location")
+    pl.add_argument("--notes", help="regex against description/notes")
+    pl.add_argument("--attendees", help="regex against attendee list")
+    pl.add_argument("--all-day-only", action="store_true", help="only all-day events")
+    pl.add_argument("--no-all-day", action="store_true", help="exclude all-day events")
+    pl.add_argument(
+        "--case-sensitive",
+        action="store_true",
+        help="treat text-filter regexes as case-sensitive",
+    )
+    pl.set_defaults(func=cmd_list)
+
+    args = ap.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
