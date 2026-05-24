@@ -1,6 +1,28 @@
 #!/usr/bin/env python3
-# ABOUTME: Triage CLI for Apple Reminders — add, list, snooze, done (explicit only).
+# ABOUTME: Triage CLI for Apple Reminders — add, list, edit, snooze, done (explicit only).
 # ABOUTME: Reads via reminders-cli (fast); writes via reminders-cli + osascript.
+#
+# PURPOSE
+#   Surface what Brooke needs to do today, this week, and beyond — bucketed
+#   HIGH > TODAY > OVERDUE > UPCOMING — plus query filters across reminder
+#   attributes (title regex, notes regex, priority, due range, no-due, list).
+#
+# DEPENDENCY (one-time)
+#   brew install keith/formulae/reminders-cli
+#
+# DAILY DIGEST
+#   ~/bin/daily-summary reads from this CLI's underlying data to text Brooke
+#   a HIGH + due-today summary at 07:00 each morning via a LaunchAgent at
+#   ~/Library/LaunchAgents/com.brooke.daily-summary.plist. See the daily-summary
+#   script header for full setup + plist template.
+#
+#   Quick reinstall after a fresh dotfiles checkout:
+#       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brooke.daily-summary.plist
+#
+# RELATED
+#   ~/bin/cal                              paired calendar CLI (same conventions)
+#   ~/bin/daily-summary                    07:00 iMessage digest consumer
+#   ~/.claude/rules/macos-automation.md    usage rules and behavioural conventions
 
 import argparse
 import datetime as dt

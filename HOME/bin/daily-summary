@@ -1,6 +1,75 @@
 #!/usr/bin/env python3
 # ABOUTME: Daily morning digest — texts HIGH + due-today reminders + today/tomorrow calendar to Brooke.
 # ABOUTME: Designed for launchd at 07:00. Absolute paths; logs to stdout/stderr.
+#
+# PURPOSE
+#   Surface the day's urgent items to Brooke's phone before he's at his desk.
+#   Sends ONE iMessage per morning to his mobile (number constant below).
+#
+# CONTENT
+#   - HIGH PRIORITY: every incomplete reminder with priority=1, any due date
+#   - DUE TODAY:     reminders due today not already in HIGH
+#   - CALENDAR:      icalBuddy eventsToday+1 (today + tomorrow)
+#
+# SETUP (one-time)
+#   1. Place this script at ~/bin/daily-summary and chmod +x.
+#   2. Save the LaunchAgent plist at:
+#        ~/Library/LaunchAgents/com.brooke.daily-summary.plist
+#      with the contents shown in the PLIST block below.
+#   3. Bootstrap it:
+#        launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brooke.daily-summary.plist
+#   4. On first 07:00 fire, macOS will prompt for Messages.app + Reminders +
+#      Calendar automation permissions. Approve all three.
+#
+# MANAGE
+#   launchctl list | grep daily-summary                            inspect
+#   launchctl bootout gui/$(id -u)/com.brooke.daily-summary        disable
+#   launchctl bootstrap gui/$(id -u) <plist-path>                  re-enable
+#
+# LOGS
+#   ~/Library/Logs/daily-summary.log    stdout (message preview each run)
+#   ~/Library/Logs/daily-summary.err    stderr (errors)
+#
+# PLIST (verbatim, write to ~/Library/LaunchAgents/com.brooke.daily-summary.plist):
+#   <?xml version="1.0" encoding="UTF-8"?>
+#   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+#   <plist version="1.0">
+#   <dict>
+#       <key>Label</key>
+#       <string>com.brooke.daily-summary</string>
+#       <key>ProgramArguments</key>
+#       <array>
+#           <string>/Users/brooke/bin/daily-summary</string>
+#       </array>
+#       <key>StartCalendarInterval</key>
+#       <dict>
+#           <key>Hour</key>
+#           <integer>7</integer>
+#           <key>Minute</key>
+#           <integer>0</integer>
+#       </dict>
+#       <key>EnvironmentVariables</key>
+#       <dict>
+#           <key>PATH</key>
+#           <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+#       </dict>
+#       <key>StandardOutPath</key>
+#       <string>/Users/brooke/Library/Logs/daily-summary.log</string>
+#       <key>StandardErrorPath</key>
+#       <string>/Users/brooke/Library/Logs/daily-summary.err</string>
+#       <key>RunAtLoad</key>
+#       <false/>
+#   </dict>
+#   </plist>
+#
+# MAC-ASLEEP BEHAVIOUR
+#   launchd's StartCalendarInterval does NOT wake the Mac. If asleep at 07:00
+#   the job fires when the Mac next wakes. To force timing, add:
+#     sudo pmset repeat wake MTWRFSU 06:55:00
+#
+# RELATED
+#   ~/bin/remind, ~/bin/cal                    underlying CLIs used here
+#   ~/.claude/rules/macos-automation.md        usage rules + conventions
 
 import datetime as dt
 import json

@@ -1,6 +1,28 @@
 #!/usr/bin/env python3
 # ABOUTME: CLI for Apple Calendar — list with rich filters via parsed icalBuddy, add via osascript.
 # ABOUTME: Stdlib only.
+#
+# PURPOSE
+#   Show upcoming events grouped by date (today + N days, or --from/--to) with
+#   regex filters on title/location/notes/attendees, and create new events
+#   optionally inviting attendees (which sends the invite via Calendar.app).
+#
+# DEPENDENCY (one-time)
+#   brew install ical-buddy
+#
+# DAILY DIGEST
+#   ~/bin/daily-summary calls icalBuddy directly to include today + tomorrow's
+#   calendar in the 07:00 iMessage digest. The LaunchAgent lives at
+#   ~/Library/LaunchAgents/com.brooke.daily-summary.plist; see the daily-summary
+#   script header for the full setup + plist template.
+#
+#   Quick reinstall after a fresh dotfiles checkout:
+#       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brooke.daily-summary.plist
+#
+# RELATED
+#   ~/bin/remind                           paired reminders CLI (same conventions)
+#   ~/bin/daily-summary                    07:00 iMessage digest consumer
+#   ~/.claude/rules/macos-automation.md    usage rules and behavioural conventions
 
 import argparse
 import datetime as dt
