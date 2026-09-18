@@ -24,20 +24,42 @@ When Brooke says "email [document] to [person]":
 3. Compose in Mail.app via AppleScript — do NOT auto-send, open for review
 4. Always CC brooke@oehmsmith.com
 5. Default: describe document and highlight recent changes
-6. After Brooke confirms sent, record date in project memory
+6. **Always apply 18pt body sizing** — Brooke's standing preference for all outbound emails
+7. After Brooke confirms sent, record date in project memory
 
-```bash
-osascript -e '
+**Working pattern** (order matters — see the "known trap" below):
+
+```applescript
 tell application "Mail"
-    set newMsg to make new outgoing message with properties {subject:"SUBJECT", content:"BODY", visible:true}
+    set bodyText to "Hi NAME,
+
+Body content here — plain text with • bullets if wanted.
+
+Cheers,
+Brooke"
+    -- 1. Body goes in the INITIAL properties block:
+    set newMsg to make new outgoing message with properties {subject:"SUBJECT", content:bodyText, visible:true}
+    -- 2. THEN add recipients + attachments:
     tell newMsg
         make new to recipient with properties {name:"NAME", address:"EMAIL"}
         make new cc recipient with properties {name:"Brooke", address:"brooke@oehmsmith.com"}
         make new attachment with properties {file name:POSIX file "PDF_PATH"}
     end tell
+    -- 3. THEN apply 18pt sizing (standing preference for outbound):
+    tell content of newMsg
+        set size of every paragraph to 18
+    end tell
     activate
-end tell'
+end tell
 ```
+
+**Known trap — do NOT do this:** creating the message with `content:""` (empty) and later calling `set content of newMsg to "..."` after adding an attachment silently clobbers the body. The compose window shows the attachment + subject + recipients but the body renders blank. Root cause: attachment insertion disturbs the text-storage insertion point in a way subsequent `set content` no longer targets. **Always put the body in the initial `make new outgoing message with properties` block.**
+
+**Bold specific paragraphs** (optional): `set font of paragraph N of content of newMsg to "Helvetica-Bold"`. Can target `paragraph N`, `word N of paragraph M`, or `characters X thru Y`. No bullet lists or HTML structure available — use `•` (Unicode bullet) for manual bullet points.
+
+**AppleScript escapes**: `$` is a plain character — do NOT prefix with `\` (breaks with "Expected  but found unknown token"). Literal newlines inside quoted strings are fine. Escape quotes with `\"`.
+
+**Fallback if body still won't stick**: write body to `/tmp/body.txt`, `pbcopy < /tmp/body.txt`, Brooke pastes into the open compose window. Use only if the working pattern above fails for an unusual reason — should be rare.
 
 ### Send Message
 When Brooke says "send [person] a message":
