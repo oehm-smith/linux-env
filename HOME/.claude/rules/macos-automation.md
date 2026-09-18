@@ -11,11 +11,48 @@ When starting a session, offer to set the tab title:
 
 Work on any project with markdown documents. **Never operate on documents outside the current project.**
 
-### Create PDF
-When Brooke says "create PDF for [document]":
-1. Find the markdown file (use glob)
-2. Run: `convertproj.sh -f pdf -t bespoke.docx <path>`
-3. Output goes to `dist/`
+Tooling repo: `~/CloudStation/Dev/documentation/2026-02-07_build-system/`. Wrappers in `~/bin/`. All per-tool docs at `~/.claude/cross-project-tools/*.md` — read on demand only.
+
+### Print / convert markdown → PDF or DOCX
+Triggers: "print to pdf", "print to word", "create pdf for X", "make a docx of X", "convert X to pdf/word".
+
+1. Find the markdown file (glob). If ambiguous, ask.
+2. Pick the right wrapper:
+   - Single file, one output file → `md-convert.sh`.
+   - Single file into a project's `dist/<subpath>/…` → `md-project-convert.sh`.
+   - Multi-file combined via `manifest.ini` → `md-combine-doc.sh`.
+3. Default template is fine unless Brooke names one. Templates live at `~/Library/Application Support/convert-md/templates/<name>/` (bundle) — pick with `-t <name>` (bare name; no `.docx`/`.typ`).
+4. Format from output extension or `-f`. PDF is the default.
+
+All three wrappers accept the same styling flags: `-t <template>` picks a bundle by bare name, `--project "<string>"` supplies the `$project$` header/footer substitution.
+
+**Fast path** — single file, one PDF:
+```bash
+md-convert.sh <input.md> -o <output.pdf>
+md-convert.sh -t <template> --project "Q3 report" <input.md> -o <output.pdf>
+```
+
+**Fast path** — single file, one DOCX:
+```bash
+md-convert.sh <input.md> -o <output.docx> -f docx
+md-convert.sh -t <template> <input.md> -o <output.docx> -f docx
+```
+
+**Project-aware** — auto-output under `dist/`:
+```bash
+md-project-convert.sh <input.md>                          # → dist/<subpath>/<name>.pdf
+md-project-convert.sh -f docx <input.md>                  # → dist/<subpath>/<name>.docx
+md-project-convert.sh -t <template> <input.md>            # apply a template
+```
+
+**Manifest build** — combined multi-file document:
+```bash
+md-combine-doc.sh                                         # PDF only, uses ./manifest.ini
+md-combine-doc.sh --docx                                  # also emit combined DOCX
+md-combine-doc.sh -t <template> --project "Q3 report"     # template + $project$ substitution
+```
+
+For the full flag surface run `<tool> --claude-help`. Do NOT `ls` the cross-project-tools/ directory unless the above doesn't cover the ask.
 
 ### Email Document
 When Brooke says "email [document] to [person]":
