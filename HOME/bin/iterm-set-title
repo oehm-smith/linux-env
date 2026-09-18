@@ -23,11 +23,14 @@ async def main(connection):
     update.set_name(title)
     update.set_allow_title_setting(False)
     update.set_title_components([iterm2.TitleComponents.SESSION_NAME])
+    update.set_use_custom_window_title(True)
+    update.set_custom_window_title(title)
     await session.async_set_profile_properties(update)
+    await app.current_terminal_window.async_set_title(title)
     print(f"Tab title set to: {title}")
 
 try:
-    iterm2.run_until_complete(main, True)
+    iterm2.run_until_complete(main, False)
 except Exception as e:
     print(f"Error: {e}")
     print("Is the iTerm2 Python API enabled? (Settings → General → Magic)")
