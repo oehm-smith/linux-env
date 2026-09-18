@@ -1,0 +1,26 @@
+#!/bin/sh
+# ABOUTME: Thin shell wrapper for categories/pdf/pdf-make-duplex.py.
+# ABOUTME: FILE_UTILS_DIR below is filled in by install.sh at install time.
+
+FILE_UTILS_DIR="/Users/brooke/dev/home/file-utils"
+PY="$FILE_UTILS_DIR/.venv/bin/python"
+SCRIPT="$FILE_UTILS_DIR/categories/pdf/pdf-make-duplex.py"
+
+if [ ! -d "$FILE_UTILS_DIR" ]; then
+    echo "error: file-utils project dir not found: $FILE_UTILS_DIR" >&2
+    echo "       (the project may have moved since install; re-run install.sh)" >&2
+    exit 1
+fi
+
+if [ ! -x "$PY" ]; then
+    echo "error: project venv python not found: $PY" >&2
+    echo "       re-run $FILE_UTILS_DIR/install.sh to rebuild the venv" >&2
+    exit 1
+fi
+
+if [ ! -f "$SCRIPT" ]; then
+    echo "error: $SCRIPT not found" >&2
+    exit 1
+fi
+
+exec "$PY" "$SCRIPT" "$@"
