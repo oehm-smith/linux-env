@@ -1,30 +1,45 @@
 {
   "_description": "Global project registry. Tracks all of Brooke's active projects so they don't get lost. Updated by Claude or manually.",
-  "_updated": "2026-05-02",
+  "_updated": "2026-05-17",
   "projects": {
     "brookelib": {
       "path": "~/dev/Python",
-      "description": "Shared Python library — symlink registry of reusable modules",
+      "description": "Shared Python library \u2014 symlink registry of reusable modules",
       "language": "python",
       "status": "released",
-      "brookelib_modules": ["manifest", "pandoc", "nas", "backup"],
-      "notes": "Ongoing — updated when new projects need shared modules"
+      "brookelib_modules": [
+        "manifest",
+        "pandoc",
+        "nas",
+        "backup"
+      ],
+      "notes": "Ongoing \u2014 updated when new projects need shared modules"
     },
     "backup-tools": {
       "path": "~/dev/Python/backup-tools",
-      "description": "Manual backup scripts — NAS mount, rsync sync, scaffolding",
+      "description": "Manual backup scripts \u2014 NAS mount, rsync sync, scaffolding",
       "language": "python",
       "status": "released",
-      "brookelib_modules": ["nas", "backup"],
+      "brookelib_modules": [
+        "nas",
+        "backup"
+      ],
       "notes": "In use. Sub-project within brookelib repo."
     },
     "build-system": {
       "path": "~/dev/documentation/2026-02-07_build-system",
-      "description": "Document build system — manifest-based markdown to PDF/DOCX",
+      "description": "Document build system \u2014 manifest-based markdown to PDF/DOCX",
       "language": "python",
       "status": "released",
-      "brookelib_modules": ["manifest", "pandoc"],
-      "cli_tools": ["build-docs", "convert-md", "convertproj"]
+      "brookelib_modules": [
+        "manifest",
+        "pandoc"
+      ],
+      "cli_tools": [
+        "build-docs",
+        "convert-md",
+        "convertproj"
+      ]
     },
     "cattle": {
       "path": "~/dev/AI_LLM_GPT/2026-03-11_Cattle_WebSites",
@@ -32,25 +47,34 @@
       "language": "typescript",
       "status": "active",
       "priority": 8,
-      "cli_tools": ["cattle"]
+      "cli_tools": [
+        "cattle"
+      ]
     },
     "herd-essays": {
       "path": "~/dev/AI_LLM_GPT/2026-04-27_Herd_Essays",
-      "description": "Essay RAG CLI — conversational REPL over essay projects with semantic retrieval",
+      "description": "Essay RAG CLI \u2014 conversational REPL over essay projects with semantic retrieval",
       "language": "typescript",
       "status": "active",
       "priority": 7,
-      "cli_tools": ["essay-index", "essay-query", "essay-ask", "essay-chat"],
+      "cli_tools": [
+        "essay-index",
+        "essay-query",
+        "essay-ask",
+        "essay-chat"
+      ],
       "notes": "pnpm monorepo: @herd/core + @herd/cli. SRDD methodology."
     },
     "home-auto": {
       "path": "~/dev/home/automation/2026-04-20_manage_home_tools-home_auto-ha",
-      "description": "Home automation framework — service registry, status engine, web dashboard",
+      "description": "Home automation framework \u2014 service registry, status engine, web dashboard",
       "language": "typescript",
       "status": "active",
       "priority": 4,
-      "cli_tools": ["ha-dev"],
-      "notes": "pnpm monorepo: @home-auto/core + @home-auto/cli + @home-auto/web (Next.js). Wrapper in ~/bin/ha-dev."
+      "cli_tools": [
+        "ha-dev"
+      ],
+      "notes": "pnpm monorepo: @home-auto/core + @home-auto/cli + @home-auto/web (Next.js). Wrapper in ~/bin/ha-dev. Phases 1 (Foundation) and 2 (Web Dashboard) released \u2014 tags phase-1 / phase-2. Next up: Phase 3 (Control Plane), Phase 4 (Polish and Deploy), Phase 5 (Server-Side Health Daemon)."
     },
     "mob-shares": {
       "path": "~/dev/finance/mob-shares",
@@ -58,33 +82,35 @@
       "language": "python",
       "status": "active",
       "priority": 5,
-      "cli_tools": ["mob"],
-      "notes": "Has own install.sh pattern — wrapper in ~/bin/mob"
+      "cli_tools": [
+        "mob"
+      ],
+      "notes": "Has own install.sh pattern \u2014 wrapper in ~/bin/mob"
     },
     "portfolio-graph": {
       "path": "~/dev/finance/portfolio-graph",
-      "description": "Portfolio visualisation — Node.js/Express + React + Socket.IO",
+      "description": "Portfolio visualisation \u2014 Node.js/Express + React + Socket.IO",
       "language": "javascript",
       "status": "archived",
       "notes": "Last modified 2019-07-06. Predecessor to mob-shares."
     },
     "diigo-tagger": {
       "path": "~/dev/AI_LLM_GPT/2025-09-01_DiigoTagger",
-      "description": "Diigo bookmark tagging with LLMs — auto-tagging, FTS5 search, HTMX web UI",
+      "description": "Diigo bookmark tagging with LLMs \u2014 auto-tagging, FTS5 search, HTMX web UI",
       "language": "python",
       "status": "active",
       "priority": 6
     },
     "catalyst-essays": {
       "path": "~/dev/AI_LLM_GPT/2025-06-02_Catalyst-EssayWritingSystem-2",
-      "description": "AI essay writing platform — FastAPI backend, Astro frontend, MongoDB",
+      "description": "AI essay writing platform \u2014 FastAPI backend, Astro frontend, MongoDB",
       "language": "python",
       "status": "paused",
       "notes": "Mostly replaced by cattle and herd-essays"
     },
     "catalyst-continuum": {
       "path": "~/dev/AI_LLM_GPT/2025-07-25_Catalyst_Continuum_StoryWritingEngine",
-      "description": "AI story writing engine — entity recognition, continuity checking",
+      "description": "AI story writing engine \u2014 entity recognition, continuity checking",
       "language": "markdown",
       "status": "paused",
       "notes": "Concept/docs stage only. Mostly replaced by cattle and herd-essays."
@@ -94,7 +120,7 @@
       "description": "RAG-based file organisation using LLMs",
       "language": "markdown",
       "status": "rewrite",
-      "notes": "Decoupled agent architecture planned — triage agent + specialised agents per semantic file type. Fully decoupled."
+      "notes": "Decoupled agent architecture planned \u2014 triage agent + specialised agents per semantic file type. Fully decoupled."
     },
     "linux-env": {
       "path": "~/CloudStation/Dev/_Application_Support/linux-env",
@@ -105,7 +131,7 @@
     },
     "bank-statements": {
       "path": "~/dev/home/2025-07-15_BankCreditCardStatementAnalysis",
-      "description": "Bank/credit card statement analysis — CSV parsing, fuzzy categorisation",
+      "description": "Bank/credit card statement analysis \u2014 CSV parsing, fuzzy categorisation",
       "language": "csharp",
       "status": "paused",
       "notes": "Learning project for .NET/C#"
@@ -118,13 +144,13 @@
     },
     "amnesia-playback": {
       "path": "~/dev/amnesia/2025-09-17_playback",
-      "description": "Media playback wrapper — ffplay-based video/image display utilities",
+      "description": "Media playback wrapper \u2014 ffplay-based video/image display utilities",
       "language": "shell",
       "status": "released"
     },
     "amnesia-content": {
       "path": "~/dev/amnesia/2025-06-18_selectEncRatedContent",
-      "description": "Media file processing — rating-based selection, AES-256 encryption, manifest generation",
+      "description": "Media file processing \u2014 rating-based selection, AES-256 encryption, manifest generation",
       "language": "perl",
       "status": "released"
     },
@@ -134,11 +160,11 @@
       "language": "python",
       "status": "active",
       "priority": 1,
-      "notes": "Paid work. Client: Jo VDK."
+      "notes": "Paid work. Client: Jo VDK. Phase 1 substantially complete (12 May): OLD->NEW property normalisation done on prod, form workflow updated, record cards cleaned up, funding_model defaults set. Current focus: reproduce three board-agenda reports for Jo (issues 13-15), and provide accurate Xero integration estimate by Wed 20 May (issue 19, top priority). Brooke's contract ends 1 Aug 2026 \u2014 hours budget effectively maxed; further work needs tight scoping. Phase 2 candidates: Xero integration, RTO/non-RTO classification on Applications, digital claim approval workflow."
     },
     "ymca-canada": {
       "path": "~/dev/work/linke-smith/2026-04-15_YMCA_Canada",
-      "description": "Digital transformation consulting — discovery, research, proposals for YMCA Saint John's",
+      "description": "Digital transformation consulting \u2014 discovery, research, proposals for YMCA Saint John's",
       "language": "markdown",
       "status": "active",
       "priority": 2,
@@ -154,7 +180,7 @@
     },
     "imap-tools": {
       "path": "~/dev/AI_LLM_GPT/imap-tools/2025-12-19/imap-tools-dev",
-      "description": "Email triage system — LLM-powered urgency classification via IMAP, REST API, React UI",
+      "description": "Email triage system \u2014 LLM-powered urgency classification via IMAP, REST API, React UI",
       "language": "typescript",
       "status": "paused",
       "notes": "Microservices architecture. Motivation increases with every email wrestle."
