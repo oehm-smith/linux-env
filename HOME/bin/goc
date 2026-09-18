@@ -1,0 +1,4 @@
+#!/bin/bash
+# ABOUTME: Wrapper script that runs _goc from its repo location.
+# ABOUTME: Installed by scripts/install.sh — /Users/brooke/CloudStation/Dev/home/automation/goc is replaced at install time.
+exec "/Users/brooke/CloudStation/Dev/home/automation/goc/_goc" "$@"
