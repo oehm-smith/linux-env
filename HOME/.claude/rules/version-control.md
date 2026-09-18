@@ -17,7 +17,7 @@ NEVER assume `main` or `master`. If remote HEAD is misconfigured, warn Brooke.
 
 **MCP git_create_branch does NOT checkout** — always `git checkout <branch>` after, verify with `git status`.
 
-**When Brooke says "pr merged":** immediately `git checkout <default> && git pull`. Never continue on the old branch.
+**When Brooke says "pr merged", "mr merged", or "mrm":** the upstream MR/PR has been merged. Immediately `git checkout <default> && git pull`. Never continue on the old branch. If the current work-in-progress branch was stacked on the just-merged branch, rebase it onto the new `<default>` and force-push (safe on feature branches only, never `<default>`). `mrm` = "Merge Request Merged" (GitLab MR / GitHub PR both count).
 
 ## General Rules
 
