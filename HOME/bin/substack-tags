@@ -1,0 +1,4 @@
+#!/bin/bash
+# ABOUTME: Wrapper script that runs substack-tags from its project venv.
+# ABOUTME: Installed by scripts/install.sh — /Users/brooke/dev/social-media/2026-06-17_SubstackTagas is replaced at install time.
+exec "/Users/brooke/dev/social-media/2026-06-17_SubstackTagas/.venv/bin/substack-tags" "$@"

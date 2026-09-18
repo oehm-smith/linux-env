@@ -1,0 +1,17 @@
+#!/bin/bash
+# ABOUTME: CLI wrapper for tag-files — calls venv Python directly for fast startup.
+# ABOUTME: Installed by scripts/install.sh; /Users/brooke/CloudStation/Dev/Productivity/2026-05-25_tag-files replaced at install time.
+export TAG_FILES_HOME="/Users/brooke/CloudStation/Dev/Productivity/2026-05-25_tag-files"
+cd "$TAG_FILES_HOME" || { echo "Error: TAG_FILES_HOME directory not found: $TAG_FILES_HOME"; exit 1; }
+
+# Resolve venv Python path (cached at install time, with fallback to poetry resolution).
+VENV_PYTHON="/Users/brooke/Library/Caches/pypoetry/virtualenvs/tag-files-3D10loUj-py3.10/bin/python"
+if [ ! -x "$VENV_PYTHON" ]; then
+    VENV_PYTHON="$(poetry env info -e 2>/dev/null)"
+fi
+if [ ! -x "$VENV_PYTHON" ]; then
+    echo "Error: Could not find Python virtualenv. Run 'poetry install' in $TAG_FILES_HOME"
+    exit 1
+fi
+
+"$VENV_PYTHON" -m tag_files.cli.main "$@"

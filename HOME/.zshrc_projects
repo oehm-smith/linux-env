@@ -9,3 +9,11 @@ claude-w-auto-plan() {
 THEPATH=/Users/brooke/dev/AI_LLM_GPT/2025-06-02_Catalyst-EssayWritingSystem-2
 source $THEPATH/setup/setup_shell.sh
 alias cdcatalyst="cd $THEPATH"
+
+alias claude-control="pushd /Users/brooke/Library/CloudStorage/SynologyDrive-common/Projects/claude-control && claude -r"
+
+# 2026-07-18 - /Users/brooke/dev/home/2026-07-17_iTerm-Proprietary-escalpe-codes / goc iterm-auto-colours
+eval "$(iac shell-init zsh)"
+
+# 2026-07-10 - /Users/brooke/Library/CloudStorage/SynologyDrive-common/Projects/claude-control/tools OR goc goc
+eval "$(goc shell-init zsh)"

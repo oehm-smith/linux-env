@@ -45,3 +45,8 @@ cdalias() {
   pushd "$resolved"
   dirs -v
 }
+
+# 2026-06-09 - installed tools and need better way of remembering them.  These are varioations of unix findd
+
+alias find-fzf=fzf
+alias find-fd=fd

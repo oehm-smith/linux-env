@@ -1,0 +1,4 @@
+#!/bin/bash
+# ABOUTME: Wrapper that runs the scan-watch daemon from the project venv.
+# ABOUTME: Installed by scripts/install.sh - /Users/brooke/dev/home/automation/2026-07-11_PDFScanning is replaced at install time.
+exec "/Users/brooke/dev/home/automation/2026-07-11_PDFScanning/.venv/bin/scan-watch" "$@"

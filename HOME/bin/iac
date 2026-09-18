@@ -1,0 +1,4 @@
+#!/bin/bash
+# ABOUTME: Wrapper script that runs iac from its repo location
+# ABOUTME: Installed by scripts/install.sh — /Users/brooke/dev/home/2026-07-17_iTerm-Proprietary-escalpe-codes is replaced at install time
+exec "/Users/brooke/dev/home/2026-07-17_iTerm-Proprietary-escalpe-codes/iac" "$@"

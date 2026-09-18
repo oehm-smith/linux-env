@@ -1,0 +1,24 @@
+#!/bin/sh
+# ABOUTME: Thin shell wrapper for find-duplicate-dirs.pl in the file-utils project.
+# ABOUTME: FILE_UTILS_DIR below is filled in by install.sh at install time.
+
+FILE_UTILS_DIR="/Users/brooke/CloudStation/Dev/amnesia/2026-05-25_file-utils/file-utils"
+PERL_SCRIPT="$FILE_UTILS_DIR/find-duplicate-dirs.pl"
+
+if [ ! -d "$FILE_UTILS_DIR" ]; then
+    echo "error: file-utils project dir not found: $FILE_UTILS_DIR" >&2
+    echo "       (the project may have moved since install; re-run install.sh)" >&2
+    exit 1
+fi
+
+if [ ! -f "$PERL_SCRIPT" ]; then
+    echo "error: $PERL_SCRIPT not found" >&2
+    exit 1
+fi
+
+if ! command -v perl >/dev/null 2>&1; then
+    echo "error: perl not found in PATH" >&2
+    exit 1
+fi
+
+exec perl "$PERL_SCRIPT" "$@"

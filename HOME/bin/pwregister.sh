@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# encrypt_stdin.sh - Wrapper script for encrypt_stdin.pl
+# pwregister.sh - Wrapper script for pwregister.pl
 #
 # This wrapper calls the Perl script with proper path resolution.
 # Template field /Users/brooke/dev/amnesia/2025-06-18_selectEncRatedContent/utils will be replaced during installation.
@@ -17,11 +17,11 @@ if [ ! -d "$UTILS_DIR" ]; then
 fi
 
 # Path to the Perl script
-PERL_SCRIPT="$UTILS_DIR/edit/encrypt_stdin.pl"
+PERL_SCRIPT="$UTILS_DIR/edit/pwregister.pl"
 
 # Verify the Perl script exists
 if [ ! -f "$PERL_SCRIPT" ]; then
-    echo "Error: encrypt_stdin.pl not found at: $PERL_SCRIPT" >&2
+    echo "Error: pwregister.pl not found at: $PERL_SCRIPT" >&2
     echo "Please check your utils installation." >&2
     exit 1
 fi
@@ -29,10 +29,9 @@ fi
 # Check if Perl is available
 if ! command -v perl >/dev/null 2>&1; then
     echo "Error: Perl is not installed or not in PATH" >&2
-    echo "encrypt_stdin.pl requires Perl to run." >&2
+    echo "pwregister.pl requires Perl to run." >&2
     exit 1
 fi
 
 # Execute the Perl script with all arguments passed through
 exec perl "$PERL_SCRIPT" "$@"
-

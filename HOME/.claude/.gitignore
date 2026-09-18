@@ -25,3 +25,8 @@ plugins/marketplaces/
 plugins/install-counts-cache.json
 plugins/cache/
 plugins/repos/
+plugins/.last_inuse_sweep
+
+# Housekeeping markers and settings backups
+.last-cleanup
+settings.json.bak-*
