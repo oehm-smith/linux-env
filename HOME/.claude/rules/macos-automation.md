@@ -24,32 +24,32 @@ Triggers: "print to pdf", "print to word", "create pdf for X", "make a docx of X
 3. Default template is fine unless Brooke names one. Templates live at `~/Library/Application Support/convert-md/templates/<name>/` (bundle) — pick with `-t <name>` (bare name; no `.docx`/`.typ`).
 4. Format from output extension or `-f`. PDF is the default.
 
+All three wrappers accept the same styling flags: `-t <template>` picks a bundle by bare name, `--project "<string>"` supplies the `$project$` header/footer substitution.
+
 **Fast path** — single file, one PDF:
 ```bash
 md-convert.sh <input.md> -o <output.pdf>
+md-convert.sh -t <template> --project "Q3 report" <input.md> -o <output.pdf>
 ```
 
 **Fast path** — single file, one DOCX:
 ```bash
 md-convert.sh <input.md> -o <output.docx> -f docx
+md-convert.sh -t <template> <input.md> -o <output.docx> -f docx
 ```
 
 **Project-aware** — auto-output under `dist/`:
 ```bash
-md-project-convert.sh <input.md>              # → dist/<subpath>/<name>.pdf
-md-project-convert.sh -f docx <input.md>      # → dist/<subpath>/<name>.docx
+md-project-convert.sh <input.md>                          # → dist/<subpath>/<name>.pdf
+md-project-convert.sh -f docx <input.md>                  # → dist/<subpath>/<name>.docx
+md-project-convert.sh -t <template> <input.md>            # apply a template
 ```
 
 **Manifest build** — combined multi-file document:
 ```bash
-md-combine-doc.sh                    # PDF only, uses ./manifest.ini
-md-combine-doc.sh --docx             # also emit combined DOCX
-md-combine-doc.sh -t <template>      # apply a specific template
-```
-
-**Named template with substituted project string in header/footer:**
-```bash
-md-convert.sh -t <template> --project "My Project" <input.md> -o out.pdf
+md-combine-doc.sh                                         # PDF only, uses ./manifest.ini
+md-combine-doc.sh --docx                                  # also emit combined DOCX
+md-combine-doc.sh -t <template> --project "Q3 report"     # template + $project$ substitution
 ```
 
 For the full flag surface run `<tool> --claude-help`. Do NOT `ls` the cross-project-tools/ directory unless the above doesn't cover the ask.
