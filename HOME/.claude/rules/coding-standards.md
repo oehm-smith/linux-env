@@ -17,7 +17,25 @@
 - **YAGNI**: Don't add features we don't need right now.
 - When it doesn't conflict with YAGNI, architect for extensibility.
 - Follow SOLID principles and apply GoF design patterns where appropriate.
-- **Thin UI layers**: CLI/web/any interface must be thin wrappers around core business logic. If a function has branches unrelated to UI (type conversions, parsing, normalization, orchestration), that logic belongs in core. Review UIs before committing.
+- **Thin UI layers** — HARD GATE. Run this check before ANY commit that touches a CLI subcommand handler, HTTP route handler, or WebUI controller. Every violation Brooke has caught has been on a "small mechanical" change where I skipped this check — treat every UI touch as needing it, no matter how small.
+
+  A UI handler is allowed to do EXACTLY these four things:
+  1. Parse args / request body / user input.
+  2. Call ONE core function (which owns Config load, DB open, business logic, validation against config/registry).
+  3. Format the return value for the transport (stdout, HTTP response body, HTML template).
+  4. Choose an exit code / HTTP status.
+
+  Concrete red flags that mean "move this to core":
+  - `load_config(...)` in a UI handler (except for pure rendering data like path formatting — even then, prefer the core function to return what's needed).
+  - `Database(...)` construction in a UI handler.
+  - Any direct `db.<method>()` call from a UI handler.
+  - Arg validation that references config or registry contents ("is this a valid subject?" "is this a known bill_type?"). Core knows its own config; UI just passes the raw string.
+  - Mutual-exclusion checks between args that require domain knowledge to reason about. Core raises `ValueError`; UI translates to exit code / HTTP status.
+  - Error messages that describe internal state ("Configured subjects: [...]"). Core builds the message; UI prints it.
+
+  If you catch yourself writing "just a small UI helper with a bit of logic", stop. Add a core function that takes the raw args, returns the result. If the core function needs a callback for progress streaming or an interactive prompt, pass it in. UI's job is presentation and transport — nothing else.
+
+  Refactor cost: usually adding one `run_X(*, config_path, ...args...)` wrapper to a core module and slimming the handler to 5-10 lines. Cheap. Do it.
 - **Classes vs functions**: Use a class when functions share state, have a lifecycle, or thread the same first argument. Use functions for pure transformations and one-shot operations. 3+ functions with the same first parameter = a class.
 
 ## Naming
