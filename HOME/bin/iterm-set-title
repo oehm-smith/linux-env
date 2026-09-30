@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
+#!/Users/brooke/.local/venvs/iterm-set-title/bin/python3
 # ABOUTME: Sets iTerm2 tab title and locks it so the shell can't override it.
 # ABOUTME: Requires iTerm2 Python API to be enabled (Settings → General → Magic).
+# ABOUTME: Runs from a dedicated venv at ~/.local/venvs/iterm-set-title/ so a Homebrew python3 major bump doesn't drop the iterm2 package. Recreate with: python3 -m venv ~/.local/venvs/iterm-set-title && ~/.local/venvs/iterm-set-title/bin/pip install iterm2
 
 import sys
 import iterm2
