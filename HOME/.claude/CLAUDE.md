@@ -58,7 +58,7 @@ If the current project is *not* yet in `projects/`, ask the user if they'd like 
 
 ## `goc` — jump between projects and life-admin domains
 
-Brooke uses `goc` from a plain iTerm shell (not from inside a Claude session) to `cd` between projects and life-admin domains, optionally resuming the last Claude session in that dir. Repo: `~/common/Projects/claude-control/tools/` (`goc` = "go, claude"; plain `go` collides with the Go toolchain).
+Brooke uses `goc` from a plain iTerm shell (not from inside a Claude session) to `cd` between projects and life-admin domains, optionally resuming the last Claude session in that dir. Repo: `~/CloudStation/Dev/home/automation/goc/` (`goc` = "go, claude"; plain `go` collides with the Go toolchain). The GitLab remote is still named `claude-control-tools` — goc was authored in the claude-control workspace and moved out on 2026-08-22; the remote was intentionally not renamed.
 
 Two data sources:
 

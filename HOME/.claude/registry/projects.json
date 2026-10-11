@@ -1,6 +1,6 @@
 {
   "_description": "Global project registry. Tracks all of Brooke's active projects so they don't get lost. Updated by Claude or manually.",
-  "_updated": "2026-05-17",
+  "_updated": "2026-10-12",
   "projects": {
     "brookelib": {
       "path": "~/dev/Python",
@@ -184,6 +184,14 @@
       "language": "typescript",
       "status": "paused",
       "notes": "Microservices architecture. Motivation increases with every email wrestle."
+    },
+    "garage-shelves": {
+      "path": "~/CloudStation/Projects/Home-handyman/2026-10-12_GarageShelves_Corner",
+      "description": "Garage corner alcove storage shelving \u2014 Handy Angle steel frame with plywood decks",
+      "language": "none",
+      "status": "active",
+      "priority": 9,
+      "notes": "Design plan written, nothing purchased or built. Global View slug garage-shelves; goc entry garage-shelves (handyman)."
     }
   }
 }
