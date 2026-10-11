@@ -7,3 +7,15 @@ HOME/bin/packer
 HOME/bin/par2
 HOME/bin/unrar
 HOME/bin/lib/
+
+# Hermes runtime state — the .hermes tree is live state owned by the hermes
+# tool (databases, caches, sessions, locks, logs). Nothing in it belongs in
+# the dotfiles repo; hermes recreates its own state on a fresh machine.
+HOME/.hermes/
+
+# Claude runtime state — synced caches, lockfiles, directory caches that
+# Claude Code regenerates per machine.
+HOME/.claude/.credentials.lock
+HOME/.claude/plugins/plugin-directory-cache-v2.json
+HOME/.claude/plugins/synced/
+HOME/.claude/skills/synced/
