@@ -19,8 +19,9 @@
 #   --help, -h       Show this help and exit.
 #
 # Notes
-#   - Requires ffmpeg with libaom-av1 for AVIF and libwebp for WebP.
-#   - If an encoder is missing, that format is skipped with a warning.
+#   - Requires ffmpeg with libsvtav1 for AVIF, and the cwebp binary for WebP.
+#   - If either is missing, that format is skipped with a warning.
+#   - Install missing bits: `brew install ffmpeg webp` (both ship these out of the box).
 #
 # Examples
 #   img_web photo.jpg
@@ -56,9 +57,9 @@ img_web() {
   [[ $# -lt 1 ]] && { print -u2 "usage: $(basename $0) [--help] [-w maxw] [-qa avif_crf] [-qw webp_quality] <image...>"; return 2; }
 
   local have_avif=0 have_webp=0
-  _img_web_has_enc 'libaom-av1' && have_avif=1
-  _img_web_has_enc 'libwebp'   && have_webp=1
-  (( have_avif || have_webp )) || { print -u2 "ffmpeg encoders not found (need libaom-av1 and/or libwebp)"; return 3; }
+  _img_web_has_enc 'libsvtav1' && have_avif=1
+  command -v cwebp >/dev/null 2>&1 && have_webp=1
+  (( have_avif || have_webp )) || { print -u2 "encoders not found (need ffmpeg's libsvtav1 and/or the cwebp binary — see Notes)"; return 3; }
 
   local vf="scale='min(${maxw},iw)':'-2':flags=lanczos"
 
@@ -80,28 +81,34 @@ img_web() {
     # Common decode + resize + strip
     local common=(-hide_banner -loglevel error -y -i "$f" -vf "$vf" -map_metadata -1 -an)
 
-    # AVIF
+    # AVIF — SVT-AV1 encoder, ffmpeg picks single-frame mode from the .avif container.
     if (( have_avif )); then
       local out_avif="${base}_web.avif"
       ffmpeg "${common[@]}" \
-        -c:v libaom-av1 -still-picture 1 -b:v 0 -crf "$avif_crf" \
-        -pix_fmt yuv420p -aom-params "cpu-used=6" \
+        -c:v libsvtav1 -crf "$avif_crf" -preset 8 \
+        -pix_fmt yuv420p \
         "$out_avif" || print -u2 "AVIF encode failed: $f"
       [[ -f "$out_avif" ]] && print "$out_avif"
     else
-      print -u2 "skip AVIF (libaom-av1 not available)"
+      print -u2 "skip AVIF (libsvtav1 not available in ffmpeg)"
     fi
 
-    # WebP
+    # WebP — cwebp handles decode, resize, strip-metadata, encode in one call.
+    # Only resize when source wider than maxw (cwebp's -resize unconditionally scales).
     if (( have_webp )); then
       local out_webp="${base}_web.webp"
-      ffmpeg "${common[@]}" \
-        -c:v libwebp -quality "$webp_q" -compression_level 6 -preset picture \
-        -pix_fmt yuv420p \
-        "$out_webp" || print -u2 "WebP encode failed: $f"
+      local src_w
+      src_w=$(sips -g pixelWidth "$f" 2>/dev/null | awk '/pixelWidth/{print $2}')
+      local resize_args=()
+      if [[ -n "$src_w" && "$src_w" -gt "$maxw" ]]; then
+        resize_args=(-resize "$maxw" 0)
+      fi
+      cwebp -quiet -mt -metadata none \
+        "${resize_args[@]}" -q "$webp_q" -m 6 \
+        "$f" -o "$out_webp" || print -u2 "WebP encode failed: $f"
       [[ -f "$out_webp" ]] && print "$out_webp"
     else
-      print -u2 "skip WebP (libwebp not available)"
+      print -u2 "skip WebP (cwebp not available — brew install webp)"
     fi
   done
 }
