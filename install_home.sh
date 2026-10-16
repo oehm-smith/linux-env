@@ -30,8 +30,9 @@ wire_file() {
     ln -s $absPath ~/$fileName
 }
 
-if [ "$(whoami)" != "root" ]; then
-	echo "Sorry, must run with sudo (root)."
+if [ "$(whoami)" = "root" ]; then
+	echo "Refusing to run as root — this script wires \$HOME dotfiles for the invoking user."
+	echo "Run it without sudo."
 	exit 1
 fi
 
