@@ -111,47 +111,47 @@ tell application "Messages"
 end tell'
 ```
 
-## Calendar (`~/bin/cal`)
+## Calendar (`~/.local/bin/cal-me`)
 
 Python CLI for Calendar.app. Reads via `icalBuddy` (fast, handles recurring events correctly); writes via osascript. Use this — do NOT shell out to raw `osascript -e 'tell application "Calendar"...'`.
 
 Prerequisite: `brew install ical-buddy`.
 
-### `cal add` — create event / send invite
+### `cal-me add` — create event / send invite
 When Brooke says "send calendar invite", "create a meeting", or "add to calendar":
 1. Look up attendees in project memory
 2. Confirm details if not fully specified
-3. Run `cal add` — defaults to the **Brooke Work** calendar
+3. Run `cal-me add` — defaults to the **Brooke Work** calendar
 4. Confirm creation back to Brooke
 
 ```
-cal add "Project review" --start "2026-06-01 14:00" --duration 60
-cal add "Dentist" --start "tomorrow 09:30" --duration 30 --calendar "Brooke"
-cal add "Stand-up" --start "today 10:00" --end "today 10:15" --attendees "alice@x.com,bob@y.com" --location "Zoom"
-cal add "Public holiday" --start "2026-06-09" --all-day --calendar "Brooke"
+cal-me add "Project review" --start "2026-06-01 14:00" --duration 60
+cal-me add "Dentist" --start "tomorrow 09:30" --duration 30 --calendar "Brooke"
+cal-me add "Stand-up" --start "today 10:00" --end "today 10:15" --attendees "alice@x.com,bob@y.com" --location "Zoom"
+cal-me add "Public holiday" --start "2026-06-09" --all-day --calendar "Brooke"
 ```
 
 Start/end accept: `today`, `tomorrow`, `+3d`, `next monday`, `YYYY-MM-DD`, any of the above with optional ` HH:MM`. Either `--end` or `--duration` (minutes); default 60 min if neither.
 
 Adding `--attendees` sends invitations automatically.
 
-### `cal list` — upcoming events + query
+### `cal-me list` — upcoming events + query
 ```
-cal list                                        # today + next 7 days
-cal list --days 14
-cal list --from "2026-06-01" --to "2026-06-15"  # explicit range
-cal list --calendar "Brooke Work"
-cal list --name "standup"                       # title regex
-cal list --location "zoom"                      # location regex
-cal list --notes "Q3 plan"                      # description regex
-cal list --attendees "alice@"                   # attendee regex
-cal list --no-all-day                           # hide birthdays/holidays
-cal list --all-day-only
+cal-me list                                        # today + next 7 days
+cal-me list --days 14
+cal-me list --from "2026-06-01" --to "2026-06-15"  # explicit range
+cal-me list --calendar "Brooke Work"
+cal-me list --name "standup"                       # title regex
+cal-me list --location "zoom"                      # location regex
+cal-me list --notes "Q3 plan"                      # description regex
+cal-me list --attendees "alice@"                   # attendee regex
+cal-me list --no-all-day                           # hide birthdays/holidays
+cal-me list --all-day-only
 ```
 
 Text filters are regex, case-insensitive by default. Add `--case-sensitive` or use an inline `(?-i:...)` group for case-sensitive matching. Filters compose freely.
 
-## Reminders (`~/bin/remind`)
+## Reminders (`~/.local/bin/remind`)
 
 Python CLI for Apple Reminders. All operations via `reminders-cli` (Reminders.app AppleScript is unusably slow at scale and writes to existing reminders silently fail). Use this — do NOT shell out to raw osascript for reminders.
 
@@ -220,9 +220,9 @@ Title and notes edits are in-place (UUID preserved). Due, priority, and list cha
 
 Caveat: reminders-cli `delete` occasionally returns success without actually completing the delete (CloudKit eventual-consistency). On rapid-fire recreate cycles you may end up with the occasional orphan. Resolve via `remind list --name <pattern>` and `remind done` (or delete in Reminders.app).
 
-There is intentionally **no `remind delete`** and **no `cal delete`** — completion or letting events pass is the only "remove" path.
+There is intentionally **no `remind delete`** and **no `cal-me delete`** — completion or letting events pass is the only "remove" path.
 
-## Daily summary digest (`~/bin/daily-summary`)
+## Daily summary digest (`~/.local/bin/daily-summary`)
 
 Scheduled via launchd at 07:00 daily — texts Brooke's mobile (0412 024 742) a digest of:
 - HIGH PRIORITY reminders (any due date)
