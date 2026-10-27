@@ -47,7 +47,10 @@ Brooke maintains a Global View of all projects at `~/common/Projects/global-view
 If the current project has an entry in `~/common/Projects/global-view/projects/`:
 
 1. Identify it by reading the project's own `CLAUDE.md` for a `Global View slug:` line, OR by matching the project's directory against `repo:` frontmatter in each `projects/*.md`.
-2. Whenever the project's **status**, **next action**, **priority**, **deadlines**, or **blockers** materially change in this session, update `~/common/Projects/global-view/projects/<slug>.md`:
+2. Whenever the project's **status**, **next action**, **priority**, **deadlines**, or **blockers** materially change in this session, update `projects/<slug>.md` **in your own git worktree of the global-view dev clone**, then open an MR. Do **NOT** write directly into `~/common/Projects/global-view/` (or its canonical `~/Library/CloudStorage/SynologyDrive-common/Projects/global-view/`): it is the prod clone, Synology-synced, and direct writes there have blocked pulls. Do **NOT** branch inside the dev clone `~/CloudStation/Dev/home/automation/global-view/` itself either: other sessions work there, and a checkout switches their files out from under them. Workflow:
+   - `git -C ~/CloudStation/Dev/home/automation/global-view fetch -q && git -C ~/CloudStation/Dev/home/automation/global-view worktree add ../global-view-wt-<slug> -b docs/<slug>-status origin/main`
+   - Edit `../global-view-wt-<slug>/projects/<slug>.md`, commit, push, open the MR from there.
+   - After it merges: `git -C ~/CloudStation/Dev/home/automation/global-view worktree remove ../global-view-wt-<slug>`.
    - Edit only the YAML frontmatter fields plus the `## Recent activity` log line at the bottom.
    - Set `updated:` to today's ISO date.
    - Don't rewrite the `## Notes` section unless asked.
