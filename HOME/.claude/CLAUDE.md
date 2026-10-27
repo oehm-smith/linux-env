@@ -42,7 +42,7 @@ Do what's asked, including obvious follow-up actions. Only pause for confirmatio
 
 ## Global View — keep the project status file fresh
 
-Brooke maintains a Global View of all projects at `~/common/Projects/global-view/` (Synology-synced; canonical path `~/Library/CloudStorage/SynologyDrive-common/Projects/global-view/`). The spec is `~/common/Projects/global-view/CONVENTION.md`.
+Brooke maintains a Global View of all projects at `~/common/Projects/global-view/` (Synology-synced; canonical path `~/Library/CloudStorage/SynologyDrive-common/Projects/global-view/`). The spec is `~/CloudStation/Dev/home/automation/ecosystem/contracts/global-view/CONVENTION.md` (the old `~/common/.../CONVENTION.md` is a pointer stub).
 
 If the current project has an entry in `~/common/Projects/global-view/projects/`:
 
