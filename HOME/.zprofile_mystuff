@@ -1,0 +1,4 @@
+# Source this from .zprofile
+# Login-shell environment (exports, PATH). Interactive setup lives in .zshrc_mystuff.
+
+source ~/.zprofile_dotnet
