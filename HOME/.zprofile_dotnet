@@ -1,0 +1,5 @@
+# .NET SDK from Homebrew lives outside Microsoft's default /usr/local/share/dotnet,
+# so global tools (e.g. dotnet-ef) need DOTNET_ROOT to find the runtime.
+export DOTNET_ROOT="/opt/homebrew/opt/dotnet/libexec"
+export PATH="$PATH:$HOME/.dotnet/tools"
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
