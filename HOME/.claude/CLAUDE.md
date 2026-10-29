@@ -66,7 +66,7 @@ Brooke uses `goc` from a plain iTerm shell (not from inside a Claude session) to
 Two data sources:
 
 - **Projects** (read-only): `~/common/Projects/global-view/projects/*.md` — same source as the Global View above; `goc` parses the `repo:` field.
-- **Life-admin domains and other categories** (editable via `goc add`/`goc rm`): `~/.config/goc/registry.json` — free-form categories (`life-domain`, `bills`, `medical`, whatever Brooke registers). This is where things like `Shares`, `Donations`, etc. live — data dirs, not code repos.
+- **Life-admin domains and other categories** (editable via `goc add`/`goc rm`): goc's own registry (goc-internal, currently `~/Library/Application Support/com.oehmsmith.goc/registry.json`; read it through `goc entries --json`, not the file) — free-form categories (`life-domain`, `bills`, `medical`, whatever Brooke registers). This is where things like `Shares`, `Donations`, etc. live — data dirs, not code repos.
 
 Commands: `goc` (list all, grouped by category, ends with Usage:), `goc <name>` (cd, fuzzy match), `goc -c <name>` (cd + resume last Claude session, or hint to start one), `goc add <name>` (register with prompt), `goc rm <name>`.
 
