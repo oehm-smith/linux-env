@@ -1,4 +1,10 @@
 # Source this from .zprofile
 # Login-shell environment (exports, PATH). Interactive setup lives in .zshrc_mystuff.
 
+source ~/.zprofile_java
+source ~/.zprofile_python
+source ~/.zprofile_node
 source ~/.zprofile_dotnet
+
+# Last, so the core directories take precedence over the language ones above.
+source ~/.zprofile_path

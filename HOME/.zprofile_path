@@ -1,0 +1,14 @@
+# Core PATH. Sourced last from .zprofile_mystuff so these directories win over
+# anything the language files (.zprofile_java, _python, _node) prepended.
+# ~/bin precedes ~/.local/bin: ~/bin holds dotfile scripts, ~/.local/bin holds
+# install.sh-generated wrappers.
+
+path=(
+  $HOME/bin
+  $HOME/.local/bin
+  /opt/homebrew/opt/trash/bin   # 'trash' command; macOS blocks it otherwise
+  /opt/homebrew/bin
+  /opt/homebrew/sbin
+  /usr/local/bin
+  $path
+)

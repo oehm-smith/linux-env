@@ -1,0 +1,7 @@
+# Node environment. nvm itself is loaded in .zshrc_node; it prepends the
+# default node (v20) to PATH there, so nvm's node wins over Homebrew's.
+
+export NVM_DIR="$HOME/.nvm"
+
+export PNPM_HOME="$HOME/Library/pnpm"
+path=($PNPM_HOME $path)

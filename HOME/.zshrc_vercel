@@ -1,0 +1,6 @@
+# ZShell file to separate vercel stuff in to
+
+vercel_project_domains() {
+    jq -r '"/v9/projects/\(.projectId)/domains --scope \(.orgId)"' .vercel/project.json \
+      | xargs vercel api 2>/dev/null | jq -r '.domains[].name'
+}

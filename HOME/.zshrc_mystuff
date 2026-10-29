@@ -20,11 +20,6 @@ EDITOR=vi	# encrypt_stdin.sh
 #alias terminator="/opt/homebrew/bin/terminator"
 alias ppm=pnpm
 
-# This loads nvm bash_completion
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
-  [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
-
 Xhex2decimal(){
   IN=$(echo $@ | tr '[:lower:]' '[:upper:]')
   #echo "ibase=16; $IN" | bc
@@ -35,22 +30,9 @@ Xdecimal2hex(){
 	echo Not Calling ibase for decimal2hex
 }
 
-[ -s "/Users/bbos/.svm/svm.sh" ] && source "/Users/bbos/.svm/svm.sh"
-
-export JAVA_HOME=`/usr/libexec/java_home -v 17`
-
-# PNPM
-export PNPM_HOME="$HOME/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-
 source ~/.iterm2_shell_integration.zsh
 
-export PATH=$HOME/bin:/opt/homebrew/opt/openjdk/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH
-export PATH=/opt/homebrew/opt/trash/bin/:$PATH	# Add 'trash' command in.  Otherwise OSX blocks it.  Weird
-export PATH=~/.local/bin/:$PATH			# Python xv tools
+# PATH, JAVA_HOME, PNPM_HOME etc. are set in ~/.zprofile (see .zprofile_mystuff).
 
 source ~/.zshrc_python
 source ~/.zshrc_node
@@ -58,6 +40,7 @@ source ~/.zshrc_kubernetes
 source ~/.zshrc_aliasNcommands
 source ~/.zshrc_projects
 source ~/.zshrc-claude-instances
+source ~/.zshrc_vercel
 
 # 2025-05-26 force zwh to automatically reread bins in $PATH since after `brew install` I don't see it until source shell again or `rehash`
 setopt hashall
