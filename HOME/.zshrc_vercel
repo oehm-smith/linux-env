@@ -1,0 +1,10 @@
+# Vercel CLI helpers, sourced from .zshrc_mystuff.
+#
+# vercel_project_domains: run inside a directory linked with `vercel link`
+# (it has .vercel/project.json); prints each domain attached to that Vercel
+# project, one per line. Needs the vercel CLI and jq.
+
+vercel_project_domains() {
+    jq -r '"/v9/projects/\(.projectId)/domains --scope \(.orgId)"' .vercel/project.json \
+      | xargs vercel api 2>/dev/null | jq -r '.domains[].name'
+}

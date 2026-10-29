@@ -1,0 +1,9 @@
+# Homebrew directories. Sourced from .zprofile_path, which places them after
+# ~/bin and ~/.local/bin and before /usr/local/bin.
+
+path=(
+  /opt/homebrew/opt/trash/bin   # 'trash' command; macOS blocks it otherwise
+  /opt/homebrew/bin
+  /opt/homebrew/sbin
+  $path
+)

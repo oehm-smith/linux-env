@@ -1,0 +1,6 @@
+# ZShell file to separate node stuff in to
+# NVM_DIR and PNPM_HOME are set in .zprofile_node.
+
+# Loads nvm and puts its default node (v20) at the front of PATH.
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"

@@ -1,0 +1,7 @@
+# Python environment. Shell integration (pyenv init) lives in .zshrc_python.
+
+# https://github.com/pyenv/pyenv#set-up-your-shell-environment-for-pyenv
+export PYENV_ROOT="/opt/homebrew/opt/pyenv"
+[[ -d $PYENV_ROOT/bin ]] && path=($PYENV_ROOT/bin $path)
+
+[[ -d $HOME/anaconda3/bin ]] && path=($HOME/anaconda3/bin $path)
