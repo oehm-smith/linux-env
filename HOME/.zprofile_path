@@ -2,13 +2,16 @@
 # anything the language files (.zprofile_java, _python, _node) prepended.
 # ~/bin precedes ~/.local/bin: ~/bin holds dotfile scripts, ~/.local/bin holds
 # install.sh-generated wrappers.
+#
+# Each step prepends, so they run lowest priority first. Resulting order:
+# ~/bin, ~/.local/bin, Homebrew (.zprofile_homebrew), /usr/local/bin, the rest.
+
+path=(/usr/local/bin $path)
+
+source ~/.zprofile_homebrew
 
 path=(
   $HOME/bin
   $HOME/.local/bin
-  /opt/homebrew/opt/trash/bin   # 'trash' command; macOS blocks it otherwise
-  /opt/homebrew/bin
-  /opt/homebrew/sbin
-  /usr/local/bin
   $path
 )
