@@ -40,24 +40,22 @@ Do what's asked, including obvious follow-up actions. Only pause for confirmatio
 - **Design**: Say "design phase" or "let's design" for SWECOM-style skills via phase-router
 - **Phase-router**: Auto-discovers `~/.claude/skills-*/` directories
 
-## Global View — keep the project status file fresh
+## Global View — keep the project status entry fresh
 
-Brooke maintains a Global View of all projects at `~/common/Projects/global-view/` (Synology-synced; canonical path `~/Library/CloudStorage/SynologyDrive-common/Projects/global-view/`). The spec is `~/CloudStation/Dev/home/automation/ecosystem/contracts/global-view/CONVENTION.md` (the old `~/common/.../CONVENTION.md` is a pointer stub).
+Brooke maintains a Global View of every project and life-admin domain. GV's HTTP API (`http://127.0.0.1:4880`, the `global-view` service) is the only tool that writes it. The data folder `~/common/Projects/global-view/` is Synology-synced and read by Cowork; it is not a git clone. The spec is `~/CloudStation/Dev/home/automation/ecosystem/contracts/global-view/CONVENTION.md`.
 
-If the current project has an entry in `~/common/Projects/global-view/projects/`:
+If the current project has a Global View entry:
 
-1. Identify it by reading the project's own `CLAUDE.md` for a `Global View slug:` line, OR by matching the project's directory against `repo:` frontmatter in each `projects/*.md`.
-2. Whenever the project's **status**, **next action**, **priority**, **deadlines**, or **blockers** materially change in this session, update `projects/<slug>.md` **in your own git worktree of the global-view dev clone**, then open an MR. Do **NOT** write directly into `~/common/Projects/global-view/` (or its canonical `~/Library/CloudStorage/SynologyDrive-common/Projects/global-view/`): it is the prod clone, Synology-synced, and direct writes there have blocked pulls. Do **NOT** branch inside the dev clone `~/CloudStation/Dev/home/automation/global-view/` itself either: other sessions work there, and a checkout switches their files out from under them. Workflow:
-   - `git -C ~/CloudStation/Dev/home/automation/global-view fetch -q && git -C ~/CloudStation/Dev/home/automation/global-view worktree add ../global-view-wt-<slug> -b docs/<slug>-status origin/main`
-   - Edit `../global-view-wt-<slug>/projects/<slug>.md`, commit, push, open the MR from there.
-   - After it merges: `git -C ~/CloudStation/Dev/home/automation/global-view worktree remove ../global-view-wt-<slug>`.
-   - Edit only the YAML frontmatter fields plus the `## Recent activity` log line at the bottom.
-   - Set `updated:` to today's ISO date.
-   - Don't rewrite the `## Notes` section unless asked.
-   - Follow the field rules in `CONVENTION.md`.
-3. When in doubt about timing, ask. Don't update on every micro-change — only when something the user would want surfaced in the dashboard has shifted.
+1. Identify it by the `Global View slug:` line in the project's own `CLAUDE.md`. Failing that, use the `global-view` MCP tools `search_entries` and `get_entry`; an entry's `dir` is the project's directory.
+2. Whenever the project's **status**, **next action**, **priority**, **deadlines** or **blockers** materially change in this session, update the entry through GV:
+   - MCP: call `get_entry`, then `update_entry` with only the PM fields that changed (`priority`, `status`, `next`, `due`, `blocked_by`, `progress`). Pass the ETag `get_entry` gave as `if_match`. Then call `log_activity` with a one-line outcome.
+   - Or the CLI: `global-view set <slug> <field> <value>` and `global-view log <slug> "<line>"`.
 
-If the current project is *not* yet in `projects/`, ask the user if they'd like it added — they can either say `add <path> [name]` in their Cowork conversation, or create the file directly.
+   GV sets `updated`, leaves the rest of the file alone, and enforces the CONVENTION field rules. Don't edit `projects/*.md` yourself, and don't open MRs for status changes.
+3. If GV refuses a write, fix what it names. For `stale`, re-read the entry and retry. If GV is down, say so and give `launchctl kickstart gui/$UID/com.oehmsmith.global-view`.
+4. When in doubt about timing, ask. Don't update on every micro-change; update only when something Brooke would want surfaced in the dashboard has shifted.
+
+If the current project has no entry, ask Brooke whether to add one. The command is `global-view add <slug> <dir> [--category <c>]`; in Cowork it's `add <path> [name]`.
 
 ## `goc` — jump between projects and life-admin domains
 
@@ -65,12 +63,12 @@ Brooke uses `goc` from a plain iTerm shell (not from inside a Claude session) to
 
 Two data sources:
 
-- **Projects** (read-only): `~/common/Projects/global-view/projects/*.md` — same source as the Global View above; `goc` parses the `repo:` field.
+- **Every entry** (projects and life-admin): read from GV's HTTP API (goc v0.12.0 on). Until goc Phase 13, goc's own registry (goc-internal; read it with `goc entries --json`) still holds the life-admin entries GV hasn't absorbed.
 - **Life-admin domains and other categories** (editable via `goc add`/`goc rm`): goc's own registry (goc-internal, currently `~/Library/Application Support/com.oehmsmith.goc/registry.json`; read it through `goc entries --json`, not the file) — free-form categories (`life-domain`, `bills`, `medical`, whatever Brooke registers). This is where things like `Shares`, `Donations`, etc. live — data dirs, not code repos.
 
 Commands: `goc` (list all, grouped by category, ends with Usage:), `goc <name>` (cd, fuzzy match), `goc -c <name>` (cd + resume last Claude session, or hint to start one), `goc add <name>` (register with prompt), `goc rm <name>`.
 
-When Brooke asks "what's the CWD for X?" for any project or domain, you can answer directly by reading the `repo:` field in the matching global-view file, or the `dir` field in the `goc` registry — no need to run `goc` yourself.
+When Brooke asks "what's the CWD for X?" for any project or domain, you can answer directly by reading the entry's `dir` (MCP `get_entry`, or `goc entries --json`), or the `dir` field in the `goc` registry — no need to run `goc` yourself.
 
 ## Brooke — email identities
 
